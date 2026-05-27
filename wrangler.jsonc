@@ -1,14 +1,20 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "babymeals",
+  "main": "src/worker.js",
   "compatibility_date": "2026-05-27",
+  "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true
   },
   "assets": {
     "directory": "."
   },
-  "compatibility_flags": [
-    "nodejs_compat"
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "baby-cube-db",
+      "database_id": "여기에_D1_ID_입력"
+    }
   ]
 }
