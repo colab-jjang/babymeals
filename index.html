@@ -420,15 +420,16 @@ function renderBabyChip(){
 }
 function openBabyModal(){
   selectedAv='👶';
-  // 아바타 초기화
-  document.querySelectorAll('#baby-modal .av-opt').forEach(e=>{e.style.borderColor='transparent';e.style.background='none';});
-  const first=document.querySelector('#baby-modal .av-opt[data-av="👶"]');
-  if(first){first.style.borderColor='var(--ac)';first.style.background='var(--ac-light)';}
-  // 입력 초기화
   const ni=document.getElementById('baby-name-input');if(ni)ni.value='';
   const bi=document.getElementById('baby-bday-input');if(bi)bi.value='';
   renderBabyList();
   document.getElementById('baby-modal').classList.add('open');
+  // 모달 열린 후 아바타 초기화
+  setTimeout(()=>{
+    document.querySelectorAll('#baby-modal .av-opt').forEach(e=>{e.style.borderColor='transparent';e.style.background='none';});
+    const first=document.querySelector('#baby-modal .av-opt');
+    if(first){first.style.borderColor='var(--ac)';first.style.background='var(--ac-light)';}
+  },0);
 }
 function renderBabyList(){
   const bl=document.getElementById('baby-list');if(!bl)return;
