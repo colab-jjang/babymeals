@@ -196,15 +196,16 @@ export default {
           const babyId = url.searchParams.get('baby_id');
           const rows = babyId
             ? await env.DB.prepare('SELECT * FROM cubes WHERE baby_id = ? ORDER BY created_at').bind(babyId).all()
-            : await env.DB.prepare(`SELECT c.* FROM cubes c JOIN babies b ON c.baby_id = b.id WHERE b.user_id = ? ORDER BY c.created_at`).bind(userId).all();
+            : await env.DB.prepare('SELECT * FROM cubes ORDER BY created_at').bind().all();
           return json(rows.results);
         }
         if (method === 'POST') {
           const body = await request.json();
+          const babyId = body.baby_id || null;
           await env.DB.prepare(`INSERT OR REPLACE INTO cubes
             (id, baby_id, name, emoji, cat_id, qty, weight, unit, made_date, expire_date, allergy, particle, note)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-            .bind(body.id, body.baby_id, body.name, body.emoji, body.cat_id, body.qty,
+            .bind(body.id, babyId, body.name, body.emoji, body.cat_id, body.qty,
                   body.weight || '', body.unit || 'g', body.made_date || null,
                   body.expire_date || null, body.allergy || 'unknown',
                   body.particle || 0, body.note || '').run();
@@ -244,13 +245,14 @@ export default {
           const limit = parseInt(url.searchParams.get('limit') || '100');
           const rows = babyId
             ? await env.DB.prepare('SELECT * FROM history WHERE baby_id = ? ORDER BY created_at DESC LIMIT ?').bind(babyId, limit).all()
-            : await env.DB.prepare(`SELECT h.* FROM history h JOIN babies b ON h.baby_id = b.id WHERE b.user_id = ? ORDER BY h.created_at DESC LIMIT ?`).bind(userId, limit).all();
+            : await env.DB.prepare('SELECT * FROM history ORDER BY created_at DESC LIMIT ?').bind(limit).all();
           return json(rows.results);
         }
         if (method === 'POST') {
           const body = await request.json();
+          const babyId = body.baby_id || null;
           await env.DB.prepare('INSERT INTO history (id, baby_id, cube_name, emoji, type, amount, memo) VALUES (?,?,?,?,?,?,?)')
-            .bind(body.id, body.baby_id, body.cube_name, body.emoji || '🍱', body.type, body.amount, body.memo || '').run();
+            .bind(body.id, babyId, body.cube_name, body.emoji || '🍱', body.type, body.amount, body.memo || '').run();
           return json({ ok: true });
         }
       }
