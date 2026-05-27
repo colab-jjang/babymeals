@@ -302,7 +302,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 <!-- 모달들 -->
 <div class="modal-overlay" id="add-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="add-modal-title">큐브 추가</div><div id="add-modal-content"></div></div></div>
 <div class="modal-overlay" id="memo-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="memo-modal-title">메모</div><div class="form-group"><label class="form-label">메모 내용</label><textarea class="form-input" id="memo-input" rows="3" placeholder="예: 오전 이유식에 사용..."></textarea></div><button class="btn-primary" onclick="saveMemo()">저장</button><button class="btn-secondary" onclick="closeModal('memo-modal')">취소</button></div></div>
-<div class="modal-overlay" id="baby-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">아기 관리</div><div id="baby-list"></div><button class="btn-secondary" onclick="toggleAddBabyForm()" style="margin-top:4px"><i class="ti ti-plus" style="font-size:13px;vertical-align:-2px"></i> 아기 추가</button><div id="add-baby-form" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px"><div class="form-row"><div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="baby-name-input" placeholder="예: 하준"></div><div class="form-group"><label class="form-label">생일</label><input type="date" class="form-input" id="baby-bday-input"></div></div><div class="form-group"><label class="form-label">아바타</label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px"><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid var(--ac);background:var(--ac-light)" class="av-opt" data-av="👶" onclick="selectAv(this)">👶</span><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🧒" onclick="selectAv(this)">🧒</span><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="👧" onclick="selectAv(this)">👧</span><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="👦" onclick="selectAv(this)">👦</span><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🐣" onclick="selectAv(this)">🐣</span><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🌟" onclick="selectAv(this)">🌟</span></div></div><button class="btn-primary" onclick="saveBaby()">저장</button></div><button class="btn-secondary" onclick="closeModal('baby-modal')" style="margin-top:7px">닫기</button></div></div>
+<div class="modal-overlay" id="baby-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">아기 관리</div><div id="baby-list"></div><button class="btn-secondary" onclick="closeModal('baby-modal')" style="margin-top:7px">닫기</button></div></div>
 <div class="modal-overlay" id="category-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">카테고리 추가</div><div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="new-cat-name" placeholder="예: 단백질, 해산물..."></div><div class="form-group"><label class="form-label">색상</label><div class="color-row" id="color-picker"></div></div><div class="form-group"><label class="form-label">이모티콘</label><input type="text" class="form-input" id="new-cat-emoji" placeholder="🥕" maxlength="2"></div><button class="btn-primary" onclick="saveCategory()">저장</button><button class="btn-secondary" onclick="closeModal('category-modal')">취소</button></div></div>
 <div class="modal-overlay" id="settings-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">설정</div><div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:8px">🔒 데이터는 Cloudflare D1 서버에 저장됩니다.<br>기기 ID: <span id="uid-display" style="font-family:monospace;font-size:11px"></span></div><div class="form-group"><label class="form-label">테마 색상</label><div class="theme-grid" id="theme-grid"></div></div><button class="btn-secondary" onclick="closeModal('settings-modal');openBabyModal()" style="margin-top:4px">👶 아기 관리</button><button class="btn-danger" onclick="if(confirm('모든 데이터를 삭제하시겠어요?')){clearAll()}" style="margin-top:7px">데이터 초기화</button><button class="btn-secondary" onclick="closeModal('settings-modal')" style="margin-top:7px">닫기</button></div></div>
 
@@ -310,7 +310,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 // ════════════════════════════════════════
 //  설정 — API URL을 여기에 입력하세요
 // ════════════════════════════════════════
-const API_BASE = ' https://baby-cube-api.babymeals.workers.dev';
+const API_BASE = 'https://baby-cube-api.YOUR_SUBDOMAIN.workers.dev';
 // ════════════════════════════════════════
 
 const FOOD_MAP=[['양배추','🥬','veg'],['브로콜리','🥦','veg'],['콜리플라워','🥦','veg'],['애호박','🥒','veg'],['단호박','🎃','veg'],['파프리카','🫑','veg'],['청경채','🥬','veg'],['아스파라거스','🌱','veg'],['고구마','🍠','veg'],['시금치','🌿','veg'],['당근','🥕','veg'],['감자','🥔','veg'],['양파','🧅','veg'],['토마토','🍅','veg'],['버섯','🍄','veg'],['케일','🥬','veg'],['옥수수','🌽','veg'],['완두콩','🫘','veg'],['비트','❤️','veg'],['셀러리','🥬','veg'],['오이','🥒','veg'],['가지','🍆','veg'],['무','🌿','veg'],['연근','🌿','veg'],['파','🌿','veg'],['부추','🌿','veg'],['깻잎','🌿','veg'],['숙주','🌱','veg'],['콩나물','🌱','veg'],['블루베리','🫐','fruit'],['딸기','🍓','fruit'],['바나나','🍌','fruit'],['수박','🍉','fruit'],['멜론','🍈','fruit'],['복숭아','🍑','fruit'],['포도','🍇','fruit'],['망고','🥭','fruit'],['키위','🥝','fruit'],['오렌지','🍊','fruit'],['자두','🍑','fruit'],['체리','🍒','fruit'],['사과','🍎','fruit'],['배','🍐','fruit'],['귤','🍊','fruit'],['레몬','🍋','fruit'],['파인애플','🍍','fruit'],['아보카도','🥑','fruit'],['현미','🌾','grain'],['오트밀','🥣','grain'],['퀴노아','🌾','grain'],['보리','🌾','grain'],['쌀','🍚','grain'],['죽','🍲','grain'],['밥','🍚','grain'],['빵','🍞','grain'],['면','🍜','grain'],['파스타','🍝','grain'],['시리얼','🥣','grain'],['소고기','🥩','protein'],['닭고기','🐓','protein'],['돼지고기','🐷','protein'],['달걀','🥚','protein'],['계란','🥚','protein'],['두부','⬜','protein'],['닭','🐓','protein'],['소','🥩','protein'],['돼지','🐷','protein'],['콩','🫘','protein'],['렌틸','🫘','protein'],['병아리콩','🫘','protein'],['사골','🦴','fish'],['연어','🐟','fish'],['대구','🐠','fish'],['광어','🐟','fish'],['명태','🐟','fish'],['참치','🐟','fish'],['고등어','🐟','fish'],['갈치','🐟','fish'],['새우','🦐','fish'],['오징어','🦑','fish'],['조개','🦪','fish'],['멸치','🐟','fish'],['요거트','🥛','dairy'],['두유','🥛','dairy'],['치즈','🧀','dairy'],['우유','🥛','dairy'],['버터','🧈','dairy']];
@@ -392,12 +392,46 @@ function renderBabyChip(){
   if(!cache.babies.length){area.innerHTML=`<div class="baby-chip" onclick="openBabyModal()"><span>👶</span><span style="color:var(--text2)">아기 추가</span></div>`;return;}
   area.innerHTML=cache.babies.map(b=>{const dp=getDplus(b.bday);const ia=b.id===cache.settings.active_baby_id;return`<div class="baby-chip${ia?' active-chip':''}" onclick="switchBaby('${b.id}')"><span>${b.avatar||'👶'}</span><span>${b.name}</span>${ia&&dp!==null?`<span class="baby-chip-days">D+${dp}</span>`:''}</div>`;}).join('');
 }
-function openBabyModal(){renderBabyList();document.getElementById('add-baby-form').style.display='none';document.getElementById('baby-modal').classList.add('open');}
-function renderBabyList(){const bl=document.getElementById('baby-list');if(!bl)return;if(!cache.babies.length){bl.innerHTML=`<div style="font-size:13px;color:var(--text2);text-align:center;padding:10px">등록된 아기가 없어요</div>`;return;}bl.innerHTML=cache.babies.map(b=>{const dp=getDplus(b.bday);return`<div class="baby-row${b.id===cache.settings.active_baby_id?' active-baby':''}" onclick="switchBaby('${b.id}')"><div class="baby-avatar">${b.avatar||'👶'}</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${b.name}</div><div style="font-size:11px;color:var(--text2)">${b.bday?`${b.bday} · D+${dp}`:'생일 미등록'}</div></div><button onclick="deleteBaby('${b.id}',event)" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:15px"><i class="ti ti-trash"></i></button></div>`;}).join('');}
-async function switchBaby(id,e){if(e)e.stopPropagation();cache.settings.active_baby_id=id;await api('POST','/api/settings',cache.settings);const b=cache.babies.find(x=>x.id===id);const[cubes,history]=await Promise.all([api('GET',`/api/cubes?baby_id=${id}`),api('GET',`/api/history?baby_id=${id}&limit=100`)]);cache.cubes=cubes;cache.history=history;render();renderBabyList();}
-function toggleAddBabyForm(){const f=document.getElementById('add-baby-form');f.style.display=f.style.display==='none'?'block':'none';}
+function openBabyModal(){selectedAv='👶';renderBabyList();document.getElementById('baby-modal').classList.add('open');}
+function renderBabyList(){
+  const bl=document.getElementById('baby-list');if(!bl)return;
+  const listHtml=cache.babies.length
+    ? cache.babies.map(b=>{const dp=getDplus(b.bday);return`<div class="baby-row${b.id===cache.settings.active_baby_id?' active-baby':''}" onclick="switchBaby('${b.id}')"><div class="baby-avatar">${b.avatar||'👶'}</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${b.name}</div><div style="font-size:11px;color:var(--text2)">${b.bday?`${b.bday} · D+${dp}`:'생일 미등록'}</div></div><button onclick="deleteBaby('${b.id}',event)" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:15px"><i class="ti ti-trash"></i></button></div>`;}).join('')
+    : '';
+  // 아기 추가 인라인 폼 — 항상 표시
+  const addForm=`
+    <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">아기 추가</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="baby-name-input" placeholder="예: 하준"></div>
+        <div class="form-group"><label class="form-label">생일</label><input type="date" class="form-input" id="baby-bday-input"></div>
+      </div>
+      <div class="form-group"><label class="form-label">아바타</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px">
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid var(--ac);background:var(--ac-light)" class="av-opt" data-av="👶" onclick="selectAv(this)">👶</span>
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🧒" onclick="selectAv(this)">🧒</span>
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="👧" onclick="selectAv(this)">👧</span>
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="👦" onclick="selectAv(this)">👦</span>
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🐣" onclick="selectAv(this)">🐣</span>
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🌟" onclick="selectAv(this)">🌟</span>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveBaby()" style="margin-top:4px">저장</button>
+    </div>`;
+  bl.innerHTML=listHtml+addForm;
+}
+async function switchBaby(id,e){if(e)e.stopPropagation();cache.settings.active_baby_id=id;await api('POST','/api/settings',cache.settings);const[cubes,history]=await Promise.all([api('GET',`/api/cubes?baby_id=${id}`),api('GET',`/api/history?baby_id=${id}&limit=100`)]);cache.cubes=cubes;cache.history=history;render();renderBabyList();}
 function selectAv(el){selectedAv=el.dataset.av;document.querySelectorAll('.av-opt').forEach(e=>{e.style.borderColor='transparent';e.style.background='none';});el.style.borderColor='var(--ac)';el.style.background='var(--ac-light)';}
-async function saveBaby(){const name=document.getElementById('baby-name-input')?.value?.trim();if(!name)return alert('이름을 입력해주세요');const bday=document.getElementById('baby-bday-input')?.value||'';const baby={id:'b'+uid8(),name,bday,avatar:selectedAv};await api('POST','/api/babies',baby);cache.babies.push(baby);if(!cache.settings.active_baby_id){cache.settings.active_baby_id=baby.id;await api('POST','/api/settings',cache.settings);}document.getElementById('add-baby-form').style.display='none';renderBabyList();renderBabyChip();}
+async function saveBaby(){
+  const name=document.getElementById('baby-name-input')?.value?.trim();if(!name)return alert('이름을 입력해주세요');
+  const bday=document.getElementById('baby-bday-input')?.value||'';
+  const baby={id:'b'+uid8(),name,bday,avatar:selectedAv};
+  await api('POST','/api/babies',baby);cache.babies.push(baby);
+  if(!cache.settings.active_baby_id){cache.settings.active_baby_id=baby.id;await api('POST','/api/settings',cache.settings);}
+  selectedAv='👶';
+  renderBabyList();renderBabyChip();
+  showToast(`✅ ${name} 추가됐어요`);
+}
 async function deleteBaby(id,e){if(e)e.stopPropagation();if(!confirm('이 아기를 삭제하시겠어요?'))return;await api('DELETE',`/api/babies/${id}`);cache.babies=cache.babies.filter(b=>b.id!==id);if(cache.settings.active_baby_id===id){cache.settings.active_baby_id=cache.babies[0]?.id||null;await api('POST','/api/settings',cache.settings);}renderBabyList();renderBabyChip();}
 
 // ── 홈 ──
@@ -518,13 +552,123 @@ async function saveCube(editId){
   closeModal('add-modal');render();showToast(editId?'✅ 수정됐어요':'✅ 추가됐어요');
 }
 async function deleteCube(id){if(!confirm('이 큐브를 삭제하시겠어요?'))return;await api('DELETE',`/api/cubes/${id}`);cache.cubes=cache.cubes.filter(c=>c.id!==id);closeModal('add-modal');render();}
-function buildMultiForm(){const today=new Date().toISOString().split('T')[0];return`<div class="form-row" style="margin-bottom:9px"><div class="form-group"><label class="form-label">공통 카테고리</label><select class="form-select" id="m-cat">${buildCatOptions(cache.categories[0]?.id||'')}</select></div><div class="form-group"><label class="form-label">공통 제조일</label><input type="date" class="form-input" id="m-made" value="${today}"></div></div><div class="form-group"><label class="form-label">공통 사용기한</label><div class="expire-options" style="margin-bottom:7px"><div class="expire-opt" onclick="qEM(7,this)">+1주</div><div class="expire-opt" onclick="qEM(14,this)">+2주</div><div class="expire-opt" onclick="qEM(21,this)">+3주</div><div class="expire-opt" onclick="qEM(90,this)">+3달</div></div><input type="date" class="form-input" id="m-expire"></div><div class="section-title" style="margin-top:7px">큐브 목록</div><div id="multi-rows"><div class="multi-add-row" data-idx="0"><input type="text" class="form-input" placeholder="이름" id="mr-name-0" style="padding:7px 9px"><input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-0" style="padding:7px 9px"></div></div><button class="add-row-btn" id="add-row-btn" onclick="addMultiRow()"><i class="ti ti-plus"></i> 항목 추가</button><button class="btn-primary" onclick="saveMultiCubes()">모두 저장</button><button class="btn-secondary" onclick="closeModal('add-modal')">취소</button>`;}
+function buildMultiCatOptions(selId){
+  // 일괄추가 전용 — 새 카테고리 옵션 포함
+  return cache.categories.map(c=>`<option value="${c.id}"${c.id===selId?' selected':''}>${c.emoji} ${c.name}</option>`).join('')+`<option value="__new__">＋ 새 카테고리</option>`;
+}
+function buildMultiForm(){
+  const today=new Date().toISOString().split('T')[0];
+  const defCat=cache.categories[0]?.id||'';
+  return`
+    <div class="form-row" style="margin-bottom:9px">
+      <div class="form-group"><label class="form-label">공통 제조일</label><input type="date" class="form-input" id="m-made" value="${today}"></div>
+      <div class="form-group"><label class="form-label">공통 사용기한</label><input type="date" class="form-input" id="m-expire"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:9px">
+      <div class="expire-options"><div class="expire-opt" onclick="qEM(7,this)">+1주</div><div class="expire-opt" onclick="qEM(14,this)">+2주</div><div class="expire-opt" onclick="qEM(21,this)">+3주</div><div class="expire-opt" onclick="qEM(90,this)">+3달</div></div>
+    </div>
+    <!-- 공유 인라인 카테고리 추가 폼 -->
+    <div class="inline-cat-form" id="m-inline-cat-form" style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;margin-bottom:7px;color:var(--text2)">새 카테고리 추가</div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">이름</label><input type="text" class="form-input" id="m-ic-name" placeholder="예: 간식" oninput="onMIcNameInput()"></div>
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">이모티콘</label><div style="display:flex;align-items:center;gap:6px"><span id="m-ic-preview" style="font-size:22px">📦</span><input type="text" class="form-input" id="m-ic-emoji" placeholder="직접입력" maxlength="2" oninput="onMIcEmojiInput()" style="flex:1"></div></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button type="button" onclick="saveMInlineCat()" style="padding:6px 14px;background:var(--ac);color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer">추가</button>
+        <button type="button" onclick="document.getElementById('m-inline-cat-form').classList.remove('open')" style="padding:6px 14px;background:none;border:1px solid var(--border);border-radius:7px;font-size:13px;cursor:pointer;color:var(--text)">취소</button>
+      </div>
+    </div>
+    <div class="section-title" style="margin-top:2px">큐브 목록 <span style="font-weight:400;font-size:10px;text-transform:none">(이름 입력 시 카테고리 자동 설정)</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 52px;gap:4px;margin-bottom:5px;padding:0 2px">
+      <div style="font-size:10px;color:var(--text2)">이름</div>
+      <div style="font-size:10px;color:var(--text2)">카테고리</div>
+      <div style="font-size:10px;color:var(--text2);text-align:center">개수</div>
+    </div>
+    <div id="multi-rows">
+      <div class="multi-add-row" data-idx="0" style="display:grid;grid-template-columns:1fr 1fr 52px;gap:4px;margin-bottom:6px">
+        <input type="text" class="form-input" placeholder="예: 당근" id="mr-name-0" style="padding:7px 9px" oninput="onMrNameInput(0)">
+        <select class="form-select" id="mr-cat-0" style="padding:7px 6px;font-size:12px" onchange="onMrCatChange(0,this)">${buildMultiCatOptions(defCat)}</select>
+        <input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-0" style="padding:7px 6px;text-align:center">
+      </div>
+    </div>
+    <button class="add-row-btn" id="add-row-btn" onclick="addMultiRow()"><i class="ti ti-plus"></i> 항목 추가</button>
+    <button class="btn-primary" onclick="saveMultiCubes()">모두 저장</button>
+    <button class="btn-secondary" onclick="closeModal('add-modal')">취소</button>`;
+}
+// 일괄추가 행 이름 입력 시 카테고리 자동 설정
+function onMrNameInput(idx){
+  const name=document.getElementById(`mr-name-${idx}`)?.value||'';
+  const{cat}=lookupFood(name);
+  if(cat){const sel=document.getElementById(`mr-cat-${idx}`);if(sel&&sel.value!=='__new__')sel.value=cat;}
+}
+// 일괄추가 카테고리 변경 — 새 카테고리 선택 시 공유 폼 열기
+function onMrCatChange(idx,sel){
+  if(sel.value==='__new__'){
+    sel.value=sel.dataset.prev||cache.categories[0]?.id||'';
+    // 어느 행에서 요청했는지 기억
+    document.getElementById('m-inline-cat-form').dataset.fromIdx=idx;
+    document.getElementById('m-ic-name').value='';
+    const ie=document.getElementById('m-ic-emoji');if(ie){ie.value='📦';ie.dataset.userEdited='';}
+    document.getElementById('m-ic-preview').textContent='📦';
+    document.getElementById('m-inline-cat-form').classList.add('open');
+  }else{sel.dataset.prev=sel.value;}
+}
+function onMIcNameInput(){
+  const name=document.getElementById('m-ic-name')?.value||'';
+  const emoji=getCatEmoji(name);
+  const ie=document.getElementById('m-ic-emoji');
+  if(ie&&!ie.dataset.userEdited)ie.value=emoji;
+  document.getElementById('m-ic-preview').textContent=emoji;
+}
+function onMIcEmojiInput(){
+  const el=document.getElementById('m-ic-emoji');
+  if(el){el.dataset.userEdited=el.value?'1':'';document.getElementById('m-ic-preview').textContent=el.value||getCatEmoji(document.getElementById('m-ic-name')?.value||'');}
+}
+async function saveMInlineCat(){
+  const name=document.getElementById('m-ic-name')?.value?.trim();if(!name)return alert('이름을 입력해주세요');
+  const emojiInput=document.getElementById('m-ic-emoji')?.value?.trim();
+  const emoji=emojiInput||getCatEmoji(name);
+  const color=CAT_COLORS[Math.floor(Math.random()*CAT_COLORS.length)];
+  const id=uid8();const cat={id,name,emoji,color,is_default:0};
+  await api('POST','/api/categories',cat);cache.categories.push(cat);renderCatManage();
+  // 모든 행의 select에 새 옵션 추가
+  document.querySelectorAll('.multi-add-row').forEach(row=>{
+    const idx=row.dataset.idx;const sel=document.getElementById(`mr-cat-${idx}`);
+    if(sel){const opt=document.createElement('option');opt.value=id;opt.textContent=`${emoji} ${name}`;sel.insertBefore(opt,sel.lastElementChild);}
+  });
+  // 요청한 행에 새 카테고리 자동 선택
+  const fromIdx=document.getElementById('m-inline-cat-form').dataset.fromIdx;
+  if(fromIdx!==undefined){const sel=document.getElementById(`mr-cat-${fromIdx}`);if(sel){sel.value=id;sel.dataset.prev=id;}}
+  document.getElementById('m-inline-cat-form').classList.remove('open');
+  showToast(`✅ "${name}" 카테고리 추가됨`);
+}
 function qEM(days,el){document.querySelectorAll('#add-modal .expire-opt').forEach(e=>e.classList.remove('selected'));el.classList.add('selected');const made=document.getElementById('m-made')?.value;const base=made?new Date(made):new Date();base.setDate(base.getDate()+days);const inp=document.getElementById('m-expire');if(inp)inp.value=base.toISOString().split('T')[0];}
-function addMultiRow(){const idx=multiRowCount++;const div=document.createElement('div');div.className='multi-add-row';div.dataset.idx=idx;div.innerHTML=`<input type="text" class="form-input" placeholder="이름" id="mr-name-${idx}" style="padding:7px 9px"><input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-${idx}" style="padding:7px 9px">`;document.getElementById('add-row-btn').before(div);}
+function addMultiRow(){
+  const idx=multiRowCount++;const defCat=cache.categories[0]?.id||'';
+  const div=document.createElement('div');div.className='multi-add-row';div.dataset.idx=idx;
+  div.style.cssText='display:grid;grid-template-columns:1fr 1fr 52px;gap:4px;margin-bottom:6px';
+  div.innerHTML=`<input type="text" class="form-input" placeholder="예: 브로콜리" id="mr-name-${idx}" style="padding:7px 9px" oninput="onMrNameInput(${idx})">
+    <select class="form-select" id="mr-cat-${idx}" style="padding:7px 6px;font-size:12px" onchange="onMrCatChange(${idx},this)">${buildMultiCatOptions(defCat)}</select>
+    <input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-${idx}" style="padding:7px 6px;text-align:center">`;
+  document.getElementById('add-row-btn').before(div);
+}
 async function saveMultiCubes(){
-  const catId=document.getElementById('m-cat')?.value;const madeDate=document.getElementById('m-made')?.value;const expireDate=document.getElementById('m-expire')?.value;
+  const madeDate=document.getElementById('m-made')?.value;const expireDate=document.getElementById('m-expire')?.value;
   const b=activeBaby();let added=0;const saves=[];
-  document.querySelectorAll('.multi-add-row').forEach(row=>{const idx=row.dataset.idx;const name=document.getElementById(`mr-name-${idx}`)?.value?.trim();if(!name)return;const qty=parseFloat(document.getElementById(`mr-qty-${idx}`)?.value||1);const{emoji,cat}=lookupFood(name);const cube={id:uid8(),name,emoji,cat_id:cat||catId,qty,weight:'',unit:'g',made_date:madeDate||null,expire_date:expireDate||null,allergy:'unknown',particle:0,note:'',baby_id:b?b.id:null};cache.cubes.push(cube);saves.push(api('POST','/api/cubes',cube));const hid='h'+uid8();saves.push(api('POST','/api/history',{id:hid,baby_id:cube.baby_id,cube_name:name,emoji,type:'added',amount:qty,memo:''}));cache.history.unshift({id:hid,baby_id:cube.baby_id,cube_name:name,emoji,type:'added',amount:qty,memo:'',created_at:Math.floor(Date.now()/1000)});added++;});
+  document.querySelectorAll('.multi-add-row').forEach(row=>{
+    const idx=row.dataset.idx;
+    const name=document.getElementById(`mr-name-${idx}`)?.value?.trim();if(!name)return;
+    const qty=parseFloat(document.getElementById(`mr-qty-${idx}`)?.value||1);
+    const{emoji,cat}=lookupFood(name);
+    // 행의 카테고리 select 값 우선, 없으면 자동 감지
+    const rowCat=document.getElementById(`mr-cat-${idx}`)?.value;
+    const finalCat=(rowCat&&rowCat!=='__new__')?rowCat:(cat||cache.categories[0]?.id||'');
+    const cube={id:uid8(),name,emoji,cat_id:finalCat,qty,weight:'',unit:'g',made_date:madeDate||null,expire_date:expireDate||null,allergy:'unknown',particle:0,note:'',baby_id:b?b.id:null};
+    cache.cubes.push(cube);saves.push(api('POST','/api/cubes',cube));
+    const hid='h'+uid8();saves.push(api('POST','/api/history',{id:hid,baby_id:cube.baby_id,cube_name:name,emoji,type:'added',amount:qty,memo:''}));
+    cache.history.unshift({id:hid,baby_id:cube.baby_id,cube_name:name,emoji,type:'added',amount:qty,memo:'',created_at:Math.floor(Date.now()/1000)});added++;
+  });
   if(!added)return alert('최소 하나의 이름을 입력해주세요');
   await Promise.all(saves);closeModal('add-modal');render();showToast(`✅ ${added}개 추가됐어요`);
 }
