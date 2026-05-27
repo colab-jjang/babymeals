@@ -97,6 +97,8 @@ async function ensureDefaultCategories(db, userId) {
   }
 }
 
+let dbInitialized = false;
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -108,8 +110,11 @@ export default {
       return new Response(null, { headers: CORS });
     }
 
-    // DB 초기화
-    await initDB(env.DB);
+    // DB 초기화 — Worker 인스턴스당 최초 1회만 실행
+    if (!dbInitialized) {
+      await initDB(env.DB);
+      dbInitialized = true;
+    }
 
     // user_id: 쿼리 파라미터로 전달 (간단한 기기 식별용)
     const userId = url.searchParams.get('uid');
@@ -118,6 +123,29 @@ export default {
     try {
       // ── ping ──
       if (path === '/api/ping') return json({ ok: true });
+
+      // ── init: 앱 시작시 필요한 모든 데이터를 1번 요청으로 ──
+      if (path === '/api/init' && method === 'GET') {
+        await ensureDefaultCategories(env.DB, userId);
+        const [babiesR, catsR, settingsR] = await Promise.all([
+          env.DB.prepare('SELECT * FROM babies WHERE user_id = ? ORDER BY created_at').bind(userId).all(),
+          env.DB.prepare('SELECT * FROM categories WHERE user_id = ? ORDER BY is_default DESC, created_at').bind(userId).all(),
+          env.DB.prepare('SELECT * FROM settings WHERE user_id = ?').bind(userId).first(),
+        ]);
+        const babies = babiesR.results;
+        const cats = catsR.results.map(r => ({ ...r, id: r.id.replace(`${userId}_`, '') }));
+        const settings = settingsR || { user_id: userId, active_baby_id: null, theme_idx: 0 };
+        const activeBabyId = settings.active_baby_id || babies[0]?.id || null;
+        const [cubesR, histR] = await Promise.all([
+          activeBabyId
+            ? env.DB.prepare('SELECT * FROM cubes WHERE baby_id = ? ORDER BY created_at').bind(activeBabyId).all()
+            : env.DB.prepare('SELECT * FROM cubes ORDER BY created_at').all(),
+          activeBabyId
+            ? env.DB.prepare('SELECT * FROM history WHERE baby_id = ? ORDER BY created_at DESC LIMIT 100').bind(activeBabyId).all()
+            : env.DB.prepare('SELECT * FROM history ORDER BY created_at DESC LIMIT 100').all(),
+        ]);
+        return json({ babies, categories: cats, settings, cubes: cubesR.results, history: histR.results });
+      }
 
       // ── settings ──
       if (path === '/api/settings') {
