@@ -376,19 +376,18 @@ async function api(method,path,body){
 function setSyncState(s){const d=document.getElementById('sync-dot');if(d){d.className='sync-dot '+s;if(s==='saved')setTimeout(()=>{if(d.classList.contains('saved'))d.className='sync-dot';},2000);}}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-// ── 데이터 로드 ──
+// ── 데이터 로드 — /api/init 한 번으로 전체 로드 ──
 async function loadAll(){
   try{
-    const [babies,cats,settings]=await Promise.all([api('GET','/api/babies'),api('GET','/api/categories'),api('GET','/api/settings')]);
-    cache.babies=babies;cache.categories=cats;cache.settings=settings||{theme_idx:0,active_baby_id:null};
-    if(!cache.settings.active_baby_id&&babies.length)cache.settings.active_baby_id=babies[0].id;
+    const data=await api('GET','/api/init');
+    cache.babies=data.babies||[];
+    cache.categories=data.categories||[];
+    cache.settings=data.settings||{theme_idx:0,active_baby_id:null};
+    cache.cubes=data.cubes||[];
+    cache.history=data.history||[];
+    if(!cache.settings.active_baby_id&&cache.babies.length)
+      cache.settings.active_baby_id=cache.babies[0].id;
     applyTheme(cache.settings.theme_idx||0);
-    const b=activeBaby();
-    const [cubes,history]=await Promise.all([
-      api('GET',b?`/api/cubes?baby_id=${b.id}`:'/api/cubes'),
-      api('GET',b?`/api/history?baby_id=${b.id}&limit=100`:'/api/history?limit=100')
-    ]);
-    cache.cubes=cubes;cache.history=history;
     document.getElementById('uid-display').textContent=UID;
     document.getElementById('loading-screen').style.display='none';
     document.getElementById('app').style.display='block';
