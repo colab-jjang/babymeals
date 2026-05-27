@@ -303,7 +303,32 @@ input[type="date"].form-input{max-width:200px}
 <!-- 모달들 -->
 <div class="modal-overlay" id="add-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="add-modal-title">큐브 추가</div><div id="add-modal-content"></div></div></div>
 <div class="modal-overlay" id="memo-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="memo-modal-title">메모</div><div class="form-group"><label class="form-label">메모 내용</label><textarea class="form-input" id="memo-input" rows="3" placeholder="예: 오전 이유식에 사용..."></textarea></div><button class="btn-primary" onclick="saveMemo()">저장</button><button class="btn-secondary" onclick="closeModal('memo-modal')">취소</button></div></div>
-<div class="modal-overlay" id="baby-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">아기 관리</div><div id="baby-list"></div><button class="btn-secondary" onclick="closeModal('baby-modal')" style="margin-top:7px">닫기</button></div></div>
+<div class="modal-overlay" id="baby-modal" onclick="if(event.target===this)closeModal('baby-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-title">아기 관리</div>
+    <div id="baby-list"></div>
+    <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">아기 추가</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="baby-name-input" placeholder="예: 하준"></div>
+        <div class="form-group"><label class="form-label">생일</label><input type="date" class="form-input" id="baby-bday-input"></div>
+      </div>
+      <div class="form-group"><label class="form-label">아바타</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px">
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid var(--ac);background:var(--ac-light)" class="av-opt" data-av="👶" onclick="selectAv(this)">👶</span>
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🧒" onclick="selectAv(this)">🧒</span>
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="👧" onclick="selectAv(this)">👧</span>
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="👦" onclick="selectAv(this)">👦</span>
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🐣" onclick="selectAv(this)">🐣</span>
+          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🌟" onclick="selectAv(this)">🌟</span>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveBaby()">저장</button>
+    </div>
+    <button class="btn-secondary" onclick="closeModal('baby-modal')" style="margin-top:7px">닫기</button>
+  </div>
+</div>
 <div class="modal-overlay" id="category-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">카테고리 추가</div><div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="new-cat-name" placeholder="예: 단백질, 해산물..."></div><div class="form-group"><label class="form-label">색상</label><div class="color-row" id="color-picker"></div></div><div class="form-group"><label class="form-label">이모티콘</label><input type="text" class="form-input" id="new-cat-emoji" placeholder="🥕" maxlength="2"></div><button class="btn-primary" onclick="saveCategory()">저장</button><button class="btn-secondary" onclick="closeModal('category-modal')">취소</button></div></div>
 <div class="modal-overlay" id="settings-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">설정</div><div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:8px">🔒 데이터는 Cloudflare D1 서버에 저장됩니다.<br>기기 ID: <span id="uid-display" style="font-family:monospace;font-size:11px"></span></div><div class="form-group"><label class="form-label">테마 색상</label><div class="theme-grid" id="theme-grid"></div></div><button class="btn-secondary" onclick="closeModal('settings-modal');setTimeout(openBabyModal,150)" style="margin-top:4px">👶 아기 관리</button><button class="btn-danger" onclick="if(confirm('모든 데이터를 삭제하시겠어요?')){clearAll()}" style="margin-top:7px">데이터 초기화</button><button class="btn-secondary" onclick="closeModal('settings-modal')" style="margin-top:7px">닫기</button></div></div>
 
@@ -393,33 +418,32 @@ function renderBabyChip(){
   if(!cache.babies.length){area.innerHTML=`<div class="baby-chip" onclick="openBabyModal()"><span>👶</span><span style="color:var(--text2)">아기 추가</span></div>`;return;}
   area.innerHTML=cache.babies.map(b=>{const dp=getDplus(b.bday);const ia=b.id===cache.settings.active_baby_id;return`<div class="baby-chip${ia?' active-chip':''}" onclick="switchBaby('${b.id}')"><span>${b.avatar||'👶'}</span><span>${b.name}</span>${ia&&dp!==null?`<span class="baby-chip-days">D+${dp}</span>`:''}</div>`;}).join('');
 }
-function openBabyModal(e){if(e)e.stopPropagation();selectedAv='👶';renderBabyList();document.getElementById('baby-modal').classList.add('open');}
+function openBabyModal(){
+  selectedAv='👶';
+  // 아바타 초기화
+  document.querySelectorAll('#baby-modal .av-opt').forEach(e=>{e.style.borderColor='transparent';e.style.background='none';});
+  const first=document.querySelector('#baby-modal .av-opt[data-av="👶"]');
+  if(first){first.style.borderColor='var(--ac)';first.style.background='var(--ac-light)';}
+  // 입력 초기화
+  const ni=document.getElementById('baby-name-input');if(ni)ni.value='';
+  const bi=document.getElementById('baby-bday-input');if(bi)bi.value='';
+  renderBabyList();
+  document.getElementById('baby-modal').classList.add('open');
+}
 function renderBabyList(){
   const bl=document.getElementById('baby-list');if(!bl)return;
-  const listHtml=cache.babies.length
-    ? cache.babies.map(b=>{const dp=getDplus(b.bday);return`<div class="baby-row${b.id===cache.settings.active_baby_id?' active-baby':''}" onclick="switchBaby('${b.id}')"><div class="baby-avatar">${b.avatar||'👶'}</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${b.name}</div><div style="font-size:11px;color:var(--text2)">${b.bday?`${b.bday} · D+${dp}`:'생일 미등록'}</div></div><button onclick="deleteBaby('${b.id}',event)" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:15px"><i class="ti ti-trash"></i></button></div>`;}).join('')
-    : '';
-  // 아기 추가 인라인 폼 — 항상 표시
-  const addForm=`
-    <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:12px">
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">아기 추가</div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="baby-name-input" placeholder="예: 하준"></div>
-        <div class="form-group"><label class="form-label">생일</label><input type="date" class="form-input" id="baby-bday-input"></div>
+  if(!cache.babies.length){bl.innerHTML='';return;}
+  bl.innerHTML=cache.babies.map(b=>{
+    const dp=getDplus(b.bday);
+    return`<div class="baby-row${b.id===cache.settings.active_baby_id?' active-baby':''}" onclick="switchBaby('${b.id}')">
+      <div class="baby-avatar">${b.avatar||'👶'}</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${b.name}</div>
+        <div style="font-size:11px;color:var(--text2)">${b.bday?`${b.bday} · D+${dp}`:'생일 미등록'}</div>
       </div>
-      <div class="form-group"><label class="form-label">아바타</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px">
-          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid var(--ac);background:var(--ac-light)" class="av-opt" data-av="👶" onclick="selectAv(this)">👶</span>
-          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🧒" onclick="selectAv(this)">🧒</span>
-          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="👧" onclick="selectAv(this)">👧</span>
-          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="👦" onclick="selectAv(this)">👦</span>
-          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🐣" onclick="selectAv(this)">🐣</span>
-          <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🌟" onclick="selectAv(this)">🌟</span>
-        </div>
-      </div>
-      <button class="btn-primary" onclick="saveBaby()" style="margin-top:4px">저장</button>
+      <button onclick="event.stopPropagation();deleteBaby('${b.id}')" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:15px"><i class="ti ti-trash"></i></button>
     </div>`;
-  bl.innerHTML=listHtml+addForm;
+  }).join('');
 }
 async function switchBaby(id,e){if(e)e.stopPropagation();cache.settings.active_baby_id=id;await api('POST','/api/settings',cache.settings);const[cubes,history]=await Promise.all([api('GET',`/api/cubes?baby_id=${id}`),api('GET',`/api/history?baby_id=${id}&limit=100`)]);cache.cubes=cubes;cache.history=history;render();renderBabyList();}
 function selectAv(el){selectedAv=el.dataset.av;document.querySelectorAll('.av-opt').forEach(e=>{e.style.borderColor='transparent';e.style.background='none';});el.style.borderColor='var(--ac)';el.style.background='var(--ac-light)';}
@@ -433,7 +457,7 @@ async function saveBaby(){
   renderBabyList();renderBabyChip();
   showToast(`✅ ${name} 추가됐어요`);
 }
-async function deleteBaby(id,e){if(e)e.stopPropagation();if(!confirm('이 아기를 삭제하시겠어요?'))return;await api('DELETE',`/api/babies/${id}`);cache.babies=cache.babies.filter(b=>b.id!==id);if(cache.settings.active_baby_id===id){cache.settings.active_baby_id=cache.babies[0]?.id||null;await api('POST','/api/settings',cache.settings);}renderBabyList();renderBabyChip();}
+async function deleteBaby(id){if(!confirm('이 아기를 삭제하시겠어요?'))return;await api('DELETE',`/api/babies/${id}`);cache.babies=cache.babies.filter(b=>b.id!==id);if(cache.settings.active_baby_id===id){cache.settings.active_baby_id=cache.babies[0]?.id||null;await api('POST','/api/settings',cache.settings);}renderBabyList();renderBabyChip();}
 
 // ── 홈 ──
 function renderHome(){
@@ -692,7 +716,7 @@ async function clearAll(){await Promise.all([...cache.cubes.map(c=>api('DELETE',
 function openBabyModal(){renderBabyList();document.getElementById('add-baby-form').style.display='none';document.getElementById('baby-modal').classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function switchTab(name,tabId){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab,.tab-add-slot').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');const tel=document.getElementById(tabId);if(tel)tel.classList.add('active');}
-document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+document.querySelectorAll('.modal-overlay:not(#baby-modal)').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
 
 loadAll();
 </script>
