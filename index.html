@@ -713,7 +713,18 @@ async function deleteCategoryById(id){if(!confirm('카테고리를 삭제하시�
 function openSettings(){const tg=document.getElementById('theme-grid');if(tg)tg.innerHTML=THEMES.map((t,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="theme-swatch${i===(cache.settings.theme_idx||0)?' active':''}" style="background:${t.ac}" onclick="setTheme(${i})"></div><div style="font-size:10px;color:var(--text2)">${t.name}</div></div>`).join('');document.getElementById('settings-modal').classList.add('open');}
 async function setTheme(idx){cache.settings.theme_idx=idx;applyTheme(idx);await api('POST','/api/settings',cache.settings);const tg=document.getElementById('theme-grid');if(tg)tg.innerHTML=THEMES.map((t,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="theme-swatch${i===idx?' active':''}" style="background:${t.ac}" onclick="setTheme(${i})"></div><div style="font-size:10px;color:var(--text2)">${t.name}</div></div>`).join('');}
 async function clearAll(){await Promise.all([...cache.cubes.map(c=>api('DELETE',`/api/cubes/${c.id}`)),...cache.categories.filter(c=>!c.is_default).map(c=>api('DELETE',`/api/categories/${c.id}`)),...cache.babies.map(b=>api('DELETE',`/api/babies/${b.id}`))]);location.reload();}
-function openBabyModal(){renderBabyList();document.getElementById('add-baby-form').style.display='none';document.getElementById('baby-modal').classList.add('open');}
+function openBabyModal(){
+  selectedAv='👶';
+  const ni=document.getElementById('baby-name-input');if(ni)ni.value='';
+  const bi=document.getElementById('baby-bday-input');if(bi)bi.value='';
+  renderBabyList();
+  document.getElementById('baby-modal').classList.add('open');
+  setTimeout(()=>{
+    document.querySelectorAll('#baby-modal .av-opt').forEach(e=>{e.style.borderColor='transparent';e.style.background='none';});
+    const first=document.querySelector('#baby-modal .av-opt');
+    if(first){first.style.borderColor='var(--ac)';first.style.background='var(--ac-light)';}
+  },0);
+}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function switchTab(name,tabId){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab,.tab-add-slot').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');const tel=document.getElementById(tabId);if(tel)tel.classList.add('active');}
 document.querySelectorAll('.modal-overlay:not(#baby-modal)').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
