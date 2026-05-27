@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#D4537E">
+<title>이유식 큐브 현황</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#f8f8f8;color:#1a1a1a;-webkit-tap-highlight-color:transparent}
+:root{--ac:#D4537E;--ac-light:#FBEAF0;--ac-border:#ED93B1;--bg:#ffffff;--bg2:#f5f5f7;--border:#e5e5e7;--text:#1a1a1a;--text2:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--bg2:#2c2c2e;--border:#3a3a3c;--text:#f2f2f7;--text2:#8e8e93}}
+#app{max-width:430px;margin:0 auto;background:var(--bg);min-height:100dvh;position:relative;padding-bottom:72px}
+
+/* ── 헤더 ── */
+.header{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg);position:sticky;top:0;z-index:40}
+.header-left{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.header-title{font-size:15px;font-weight:700;color:var(--text)}
+.baby-row-wrap{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.baby-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:var(--bg2);border-radius:20px;cursor:pointer;border:1px solid var(--border);font-size:12px;color:var(--text);transition:all .15s}
+.baby-chip.active-chip{background:var(--ac-light);border-color:var(--ac-border)}
+.baby-chip-days{color:var(--ac);font-weight:700;font-size:11px}
+.header-btn{background:none;border:none;cursor:pointer;font-size:20px;color:var(--text2);padding:4px;flex-shrink:0}
+/* 저장 상태 */
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .3s}
+.sync-dot.saving{background:#EF9F27;animation:pulse .8s infinite}
+.sync-dot.saved{background:#1D9E75}
+.sync-dot.error{background:#D85A30}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── 하단 탭바 ── */
+.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;display:flex;align-items:stretch;border-top:1px solid var(--border);background:var(--bg);height:56px;z-index:50}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:var(--text2);cursor:pointer;border-top:2px solid transparent;transition:color .15s;padding:0 4px;gap:2px}
+.tab.active{color:var(--ac);border-top-color:var(--ac);font-weight:600}
+.tab i{font-size:18px}
+.tab-add-slot{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6px;cursor:pointer;position:relative;border-top:2px solid transparent}
+.tab-add-slot.active .tab-add-label{color:var(--ac)}
+.tab-add-fab{width:48px;height:48px;border-radius:50%;background:var(--ac);color:#fff;border:3px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 2px 12px rgba(0,0,0,.2);position:absolute;top:-18px;transition:transform .1s}
+.tab-add-fab:active{transform:scale(.92)}
+.tab-add-label{font-size:10px;color:var(--text2);margin-top:32px}
+
+/* ── 페이지 ── */
+.page{display:none;padding:12px}
+.page.active{display:block}
+.section-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 7px}
+
+/* ── 통계 ── */
+.stat-row{display:flex;gap:8px;margin:10px 0}
+.stat-card{flex:1;background:var(--bg2);border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between}
+.stat-label{font-size:11px;color:var(--text2)}
+.stat-val{font-size:20px;font-weight:700;color:var(--text)}
+
+/* ── 알림 ── */
+.alert-box{border-radius:10px;padding:9px 13px;margin-bottom:7px}
+.alert-box.warn{background:#FAEEDA;border:1px solid #EF9F27}
+.alert-box.danger{background:#FAECE7;border:1px solid #D85A30}
+.alert-title{font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px}
+.alert-box.warn .alert-title{color:#854F0B}
+.alert-box.danger .alert-title{color:#4A1B0C}
+.alert-box ul{margin:5px 0 0;padding-left:16px}
+.alert-box li{font-size:11px;margin-bottom:2px;cursor:pointer;text-decoration:underline dotted}
+.alert-box.warn li{color:#854F0B}
+.alert-box.danger li{color:#4A1B0C}
+
+/* ── 캘린더 ── */
+.cal-wrap{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:11px;margin-bottom:10px}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-nav{background:none;border:none;cursor:pointer;font-size:17px;color:var(--text2);padding:4px 7px}
+.cal-title-wrap{display:flex;align-items:center;gap:6px}
+.cal-title{font-size:14px;font-weight:600}
+.cal-today-btn{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--ac-light);color:var(--ac);border:1px solid var(--ac-border);cursor:pointer}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.cal-day-label{text-align:center;font-size:10px;color:var(--text2);padding:2px 0}
+.cal-cell{min-height:32px;border-radius:4px;padding:1px 0;cursor:default;display:flex;flex-direction:column;align-items:center}
+.cal-cell.has-ev{cursor:pointer}
+.cal-cell.has-ev:hover{background:var(--bg2)}
+.cal-date{font-size:11px;width:21px;height:21px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.cal-cell.today .cal-date{background:var(--ac);color:#fff;font-weight:700}
+.cal-cell.other-month .cal-date{color:var(--border)}
+.cal-cell.selected:not(.today) .cal-date{background:var(--bg2);font-weight:600}
+.cal-dots{display:flex;gap:2px;justify-content:center;margin-top:1px}
+.cal-dot{width:4px;height:4px;border-radius:50%}
+.cal-ev-list{margin-top:8px;border-top:1px solid var(--border);padding-top:7px}
+.cal-ev-item{display:flex;align-items:center;gap:7px;padding:4px 0;cursor:pointer}
+.cal-ev-item:hover .cal-ev-name{text-decoration:underline}
+.cal-ev-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.cal-ev-name{font-size:12px;font-weight:500;flex:1;color:var(--text)}
+.cal-ev-sub{font-size:11px;color:var(--text2)}
+
+/* ── 큐브 ── */
+.sort-bar{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;margin-bottom:9px;scrollbar-width:none}
+.sort-bar::-webkit-scrollbar{display:none}
+.sort-chip{padding:4px 11px;border-radius:20px;font-size:11px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.sort-chip.active{background:var(--ac);color:#fff;border-color:var(--ac)}
+.search-bar{display:flex;align-items:center;gap:7px;background:var(--bg2);border-radius:8px;padding:7px 11px;margin-bottom:9px}
+.search-bar i{color:var(--text2);font-size:15px}
+.search-bar input{flex:1;border:none;background:none;font-size:13px;color:var(--text);outline:none}
+.cat-section{margin-bottom:7px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.cat-header{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg2);cursor:pointer;user-select:none}
+.cat-header-left{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--text)}
+.cat-badge{font-size:10px;color:var(--text2)}
+.cat-chevron{font-size:13px;color:var(--text2);transition:transform .2s}
+.cat-chevron.open{transform:rotate(180deg)}
+.cat-body{display:none;padding:7px}
+.cat-body.open{display:block}
+.cube-card{background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:10px;margin-bottom:5px}
+.cube-card:last-child{margin-bottom:0}
+.cube-card.dup-flag{border-left:3px solid #EF9F27}
+.dup-badge{background:#FAEEDA;color:#854F0B;font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700}
+.cube-top{display:flex;align-items:flex-start;justify-content:space-between;gap:7px}
+.cube-name-wrap{display:flex;align-items:center;gap:5px;flex:1;min-width:0;flex-wrap:wrap}
+.cube-name{font-size:14px;font-weight:600;color:var(--text)}
+.allergy-badge{font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700}
+.allergy-yes{background:#FAECE7;color:#993C1D}
+.allergy-no{background:#EAF3DE;color:#3B6D11}
+.cube-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+.qty-control{display:flex;align-items:center;gap:5px}
+.qty-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text);transition:background .1s}
+.qty-btn:active{background:var(--border)}
+.qty-val{font-size:17px;font-weight:700;min-width:32px;text-align:center;color:var(--text)}
+.qty-unit{font-size:10px;color:var(--text2)}
+.cube-meta{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+.meta-pill{font-size:10px;padding:2px 7px;border-radius:9px;display:flex;align-items:center;gap:2px}
+.pill-ok{background:#EAF3DE;color:#3B6D11}
+.pill-soon{background:#FAEEDA;color:#854F0B}
+.pill-urgent{background:#FAECE7;color:#4A1B0C}
+.pill-expired{background:#FAECE7;color:#4A1B0C;font-weight:700}
+.pill-info{background:#E6F1FB;color:#0C447C}
+.pill-particle{background:#EEEDFE;color:#26215C}
+.cube-note{font-size:11px;color:var(--text2);margin-top:5px;padding:4px 7px;background:var(--bg2);border-radius:5px;line-height:1.5}
+.cube-actions{display:flex;gap:5px;margin-top:7px}
+.cube-edit-btn{padding:4px 10px;font-size:11px;background:none;color:var(--text2);border:1px solid var(--border);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:3px}
+.cube-discard-btn{padding:4px 10px;font-size:11px;background:#FAECE7;color:#D85A30;border:1px solid #D85A30;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:3px}
+
+/* ── 기록 ── */
+.hist-filter-bar{display:flex;gap:5px;margin-bottom:10px}
+.hist-filter{flex:1;padding:7px;border-radius:7px;font-size:12px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;text-align:center;transition:all .15s}
+.hist-filter.f-all{background:var(--bg2);color:var(--text);font-weight:600}
+.hist-filter.f-used{background:#FAECE7;color:#993C1D;border-color:#D85A30;font-weight:600}
+.hist-filter.f-added{background:#EAF3DE;color:#3B6D11;border-color:#1D9E75;font-weight:600}
+.hist-filter.f-discarded{background:#EEEDFE;color:#26215C;border-color:#B3AEED;font-weight:600}
+.history-item{display:flex;align-items:flex-start;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.history-item:last-child{border-bottom:none}
+.history-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.history-icon.used{background:#FAECE7;color:#D85A30}
+.history-icon.added{background:#EAF3DE;color:#3B6D11}
+.history-icon.discarded{background:#EEEDFE;color:#7F77DD}
+.history-info{flex:1}
+.history-name{font-size:13px;font-weight:600;color:var(--text)}
+.history-time{font-size:11px;color:var(--text2);margin-top:1px}
+.history-memo{font-size:11px;color:var(--text2);margin-top:2px;padding:3px 7px;background:var(--bg2);border-radius:5px;display:inline-block}
+.memo-hint{font-size:10px;color:var(--text2);margin-top:2px;display:flex;align-items:center;gap:2px}
+.history-amount{font-size:13px;font-weight:700;flex-shrink:0}
+.history-amount.used{color:#D85A30}
+.history-amount.added{color:#3B6D11}
+.history-amount.discarded{color:#7F77DD}
+
+/* ── 추가 탭 ── */
+.add-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.add-mode-btn{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px 10px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:7px;width:100%;transition:border-color .15s}
+.add-mode-btn:hover{border-color:var(--ac)}
+.add-mode-btn i{font-size:26px}
+.add-mode-btn div{font-size:13px;font-weight:600;color:var(--text)}
+.add-mode-btn small{font-size:11px;color:var(--text2)}
+
+/* ── 모달 ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:430px;padding:18px;max-height:88vh;overflow-y:auto;padding-bottom:32px}
+.modal-handle{width:34px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:14px;color:var(--text)}
+.form-group{margin-bottom:12px}
+.form-label{font-size:12px;color:var(--text2);margin-bottom:3px;display:block;font-weight:500}
+.form-input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;color:var(--text);background:var(--bg);transition:border-color .15s}
+.form-input:focus{outline:none;border-color:var(--ac)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.form-select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;color:var(--text);background:var(--bg)}
+.expire-options{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.expire-opt{padding:5px 11px;border-radius:20px;font-size:12px;border:1px solid var(--border);cursor:pointer;background:var(--bg);color:var(--text);transition:all .15s}
+.expire-opt.selected{background:var(--ac);color:#fff;border-color:var(--ac)}
+.allergy-toggle{display:flex;gap:6px;margin-top:5px}
+.allergy-opt{flex:1;padding:8px;border-radius:7px;font-size:12px;border:1px solid var(--border);cursor:pointer;text-align:center;transition:all .15s;color:var(--text);background:var(--bg)}
+.allergy-opt.sel-yes{background:#FAECE7;color:#993C1D;border-color:#D85A30}
+.allergy-opt.sel-no{background:#EAF3DE;color:#3B6D11;border-color:#1D9E75}
+.allergy-opt.sel-uk{background:var(--bg2);color:var(--text2);font-weight:600}
+.particle-toggle{display:flex;gap:6px;margin-top:5px}
+.particle-opt{flex:1;padding:8px 4px;border-radius:7px;font-size:11px;border:1px solid var(--border);cursor:pointer;text-align:center;line-height:1.4;transition:all .15s;color:var(--text)}
+.particle-opt.sel-p{background:var(--ac-light);color:var(--ac);border-color:var(--ac-border);font-weight:600}
+.btn-primary{width:100%;padding:13px;background:var(--ac);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:7px;transition:opacity .15s}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{width:100%;padding:11px;background:var(--bg2);color:var(--text);border:1px solid var(--border);border-radius:10px;font-size:14px;cursor:pointer;margin-top:7px}
+.btn-danger{width:100%;padding:11px;background:var(--bg);color:#D85A30;border:1px solid #D85A30;border-radius:10px;font-size:14px;cursor:pointer;margin-top:5px}
+.emoji-preview{font-size:32px;text-align:center;margin:-3px 0 9px}
+.multi-add-row{display:grid;grid-template-columns:1fr 56px;gap:5px;margin-bottom:7px}
+.add-row-btn{display:flex;align-items:center;gap:5px;padding:7px 11px;border:1px dashed var(--border);border-radius:7px;width:100%;cursor:pointer;background:none;color:var(--text2);font-size:13px;margin-bottom:10px}
+.color-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px}
+.color-dot{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0;transition:border-color .15s}
+.color-dot.sel{border-color:var(--text)}
+.inline-cat-form{background:var(--bg2);border-radius:8px;padding:10px;margin-top:6px;display:none}
+.inline-cat-form.open{display:block}
+.ic-emoji-row{display:flex;align-items:center;gap:10px;margin-top:5px}
+.ic-emoji-preview{font-size:26px;width:32px;text-align:center;flex-shrink:0}
+.empty-state{text-align:center;padding:40px 18px;color:var(--text2)}
+.empty-state i{font-size:38px;display:block;margin-bottom:9px;opacity:.4}
+.empty-state p{font-size:13px}
+.theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px}
+.theme-swatch{width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border-color .15s}
+.theme-swatch.active{border-color:var(--text)}
+.baby-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--border);border-radius:9px;margin-bottom:7px;cursor:pointer;transition:all .15s}
+.baby-row.active-baby{border-color:var(--ac);background:var(--ac-light)}
+.baby-avatar{width:38px;height:38px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+/* 로딩 */
+.loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:12px}
+.loading-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="loading-screen" class="loading-screen">
+  <div class="loading-spinner"></div>
+  <div style="font-size:13px;color:#888">데이터 불러오는 중...</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div id="app" style="display:none">
+  <div class="header">
+    <div class="header-left">
+      <div style="display:flex;align-items:center;gap:7px">
+        <div class="header-title">🍼 이유식 큐브 현황</div>
+        <div class="sync-dot" id="sync-dot" title="저장 상태"></div>
+      </div>
+      <div class="baby-row-wrap" id="baby-chip-area"></div>
+    </div>
+    <button class="header-btn" onclick="openSettings()"><i class="ti ti-settings"></i></button>
+  </div>
+
+  <div id="page-home" class="page active">
+    <div id="stats-area"></div>
+    <div id="expire-alerts"></div>
+    <div class="section-title">소비 기한 캘린더</div>
+    <div class="cal-wrap">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calMove(-1)"><i class="ti ti-chevron-left"></i></button>
+        <div class="cal-title-wrap">
+          <span class="cal-title" id="cal-title"></span>
+          <button class="cal-today-btn" onclick="calGoToday()">오늘</button>
+        </div>
+        <button class="cal-nav" onclick="calMove(1)"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="cal-grid" id="cal-labels"></div>
+      <div class="cal-grid" id="cal-cells"></div>
+      <div id="cal-ev-list"></div>
+    </div>
+  </div>
+
+  <div id="page-cubes" class="page">
+    <div class="search-bar"><i class="ti ti-search"></i><input type="text" placeholder="큐브 검색..." id="search-input" oninput="renderCubes()"></div>
+    <div class="sort-bar" id="sort-bar"></div>
+    <div id="cubes-list"></div>
+  </div>
+
+  <div id="page-add" class="page">
+    <div class="section-title">추가 방식 선택</div>
+    <div class="add-mode-grid">
+      <button class="add-mode-btn" onclick="openAddModal(false)"><i class="ti ti-cube" style="color:var(--ac)"></i><div>단일 추가</div><small>큐브 하나씩</small></button>
+      <button class="add-mode-btn" onclick="openAddModal(true)"><i class="ti ti-stack-2" style="color:#1D9E75"></i><div>일괄 추가</div><small>여러 개 한 번에</small></button>
+    </div>
+    <div class="section-title">카테고리 관리</div>
+    <div id="cat-manage-list"></div>
+    <button class="add-row-btn" onclick="openCategoryModal()"><i class="ti ti-plus"></i> 카테고리 추가</button>
+  </div>
+
+  <div id="page-history" class="page">
+    <div class="hist-filter-bar">
+      <div class="hist-filter f-all" id="hf-all" onclick="setHistFilter('all')">전체</div>
+      <div class="hist-filter" id="hf-used" onclick="setHistFilter('used')">🍽 사용</div>
+      <div class="hist-filter" id="hf-added" onclick="setHistFilter('added')">➕ 추가</div>
+      <div class="hist-filter" id="hf-discarded" onclick="setHistFilter('discarded')">🗑 폐기</div>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" id="tab-home" onclick="switchTab('home','tab-home')"><i class="ti ti-home"></i>홈</div>
+  <div class="tab" id="tab-cubes" onclick="switchTab('cubes','tab-cubes')"><i class="ti ti-box"></i>큐브</div>
+  <div class="tab-add-slot" id="tab-add-slot" onclick="switchTab('add','tab-add-slot')">
+    <div class="tab-add-fab"><i class="ti ti-plus"></i></div>
+    <span class="tab-add-label">추가</span>
+  </div>
+  <div class="tab" id="tab-history" onclick="switchTab('history','tab-history')"><i class="ti ti-history"></i>기록</div>
+  <div class="tab" onclick="openSettings()"><i class="ti ti-adjustments"></i>설정</div>
+</div>
+
+<!-- 모달들 -->
+<div class="modal-overlay" id="add-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="add-modal-title">큐브 추가</div><div id="add-modal-content"></div></div></div>
+<div class="modal-overlay" id="memo-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="memo-modal-title">메모</div><div class="form-group"><label class="form-label">메모 내용</label><textarea class="form-input" id="memo-input" rows="3" placeholder="예: 오전 이유식에 사용..."></textarea></div><button class="btn-primary" onclick="saveMemo()">저장</button><button class="btn-secondary" onclick="closeModal('memo-modal')">취소</button></div></div>
+<div class="modal-overlay" id="baby-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">아기 관리</div><div id="baby-list"></div><button class="btn-secondary" onclick="toggleAddBabyForm()" style="margin-top:4px"><i class="ti ti-plus" style="font-size:13px;vertical-align:-2px"></i> 아기 추가</button><div id="add-baby-form" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px"><div class="form-row"><div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="baby-name-input" placeholder="예: 하준"></div><div class="form-group"><label class="form-label">생일</label><input type="date" class="form-input" id="baby-bday-input"></div></div><div class="form-group"><label class="form-label">아바타</label><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px"><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid var(--ac);background:var(--ac-light)" class="av-opt" data-av="👶" onclick="selectAv(this)">👶</span><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🧒" onclick="selectAv(this)">🧒</span><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="👧" onclick="selectAv(this)">👧</span><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="👦" onclick="selectAv(this)">👦</span><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🐣" onclick="selectAv(this)">🐣</span><span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid transparent" class="av-opt" data-av="🌟" onclick="selectAv(this)">🌟</span></div></div><button class="btn-primary" onclick="saveBaby()">저장</button></div><button class="btn-secondary" onclick="closeModal('baby-modal')" style="margin-top:7px">닫기</button></div></div>
+<div class="modal-overlay" id="category-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">카테고리 추가</div><div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="new-cat-name" placeholder="예: 단백질, 해산물..."></div><div class="form-group"><label class="form-label">색상</label><div class="color-row" id="color-picker"></div></div><div class="form-group"><label class="form-label">이모티콘</label><input type="text" class="form-input" id="new-cat-emoji" placeholder="🥕" maxlength="2"></div><button class="btn-primary" onclick="saveCategory()">저장</button><button class="btn-secondary" onclick="closeModal('category-modal')">취소</button></div></div>
+<div class="modal-overlay" id="settings-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">설정</div><div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:8px">🔒 데이터는 Cloudflare D1 서버에 저장됩니다.<br>기기 ID: <span id="uid-display" style="font-family:monospace;font-size:11px"></span></div><div class="form-group"><label class="form-label">테마 색상</label><div class="theme-grid" id="theme-grid"></div></div><button class="btn-secondary" onclick="closeModal('settings-modal');openBabyModal()" style="margin-top:4px">👶 아기 관리</button><button class="btn-danger" onclick="if(confirm('모든 데이터를 삭제하시겠어요?')){clearAll()}" style="margin-top:7px">데이터 초기화</button><button class="btn-secondary" onclick="closeModal('settings-modal')" style="margin-top:7px">닫기</button></div></div>
+
+<script>
+// ════════════════════════════════════════
+//  설정 — API URL을 여기에 입력하세요
+// ════════════════════════════════════════
+const API_BASE = 'https://baby-cube-api.babymeals.workers.dev';
+// ════════════════════════════════════════
+
+const FOOD_MAP=[['양배추','🥬','veg'],['브로콜리','🥦','veg'],['콜리플라워','🥦','veg'],['애호박','🥒','veg'],['단호박','🎃','veg'],['파프리카','🫑','veg'],['청경채','🥬','veg'],['아스파라거스','🌱','veg'],['고구마','🍠','veg'],['시금치','🌿','veg'],['당근','🥕','veg'],['감자','🥔','veg'],['양파','🧅','veg'],['토마토','🍅','veg'],['버섯','🍄','veg'],['케일','🥬','veg'],['옥수수','🌽','veg'],['완두콩','🫘','veg'],['비트','❤️','veg'],['셀러리','🥬','veg'],['오이','🥒','veg'],['가지','🍆','veg'],['무','🌿','veg'],['연근','🌿','veg'],['파','🌿','veg'],['부추','🌿','veg'],['깻잎','🌿','veg'],['숙주','🌱','veg'],['콩나물','🌱','veg'],['블루베리','🫐','fruit'],['딸기','🍓','fruit'],['바나나','🍌','fruit'],['수박','🍉','fruit'],['멜론','🍈','fruit'],['복숭아','🍑','fruit'],['포도','🍇','fruit'],['망고','🥭','fruit'],['키위','🥝','fruit'],['오렌지','🍊','fruit'],['자두','🍑','fruit'],['체리','🍒','fruit'],['사과','🍎','fruit'],['배','🍐','fruit'],['귤','🍊','fruit'],['레몬','🍋','fruit'],['파인애플','🍍','fruit'],['아보카도','🥑','fruit'],['현미','🌾','grain'],['오트밀','🥣','grain'],['퀴노아','🌾','grain'],['보리','🌾','grain'],['쌀','🍚','grain'],['죽','🍲','grain'],['밥','🍚','grain'],['빵','🍞','grain'],['면','🍜','grain'],['파스타','🍝','grain'],['시리얼','🥣','grain'],['소고기','🥩','protein'],['닭고기','🐓','protein'],['돼지고기','🐷','protein'],['달걀','🥚','protein'],['계란','🥚','protein'],['두부','⬜','protein'],['닭','🐓','protein'],['소','🥩','protein'],['돼지','🐷','protein'],['콩','🫘','protein'],['렌틸','🫘','protein'],['병아리콩','🫘','protein'],['사골','🦴','fish'],['연어','🐟','fish'],['대구','🐠','fish'],['광어','🐟','fish'],['명태','🐟','fish'],['참치','🐟','fish'],['고등어','🐟','fish'],['갈치','🐟','fish'],['새우','🦐','fish'],['오징어','🦑','fish'],['조개','🦪','fish'],['멸치','🐟','fish'],['요거트','🥛','dairy'],['두유','🥛','dairy'],['치즈','🧀','dairy'],['우유','🥛','dairy'],['버터','🧈','dairy']];
+const CAT_EMOJI_MAP=[['채소','🥦'],['야채','🥦'],['과일','🍎'],['곡물','🌾'],['죽','🍲'],['단백질','🥩'],['고기','🥩'],['해산물','🐟'],['생선','🐟'],['유제품','🧀'],['우유','🥛'],['간식','🍪'],['디저트','🍮'],['음료','🧃'],['달걀','🥚'],['두부','⬜'],['콩','🫘'],['견과','🥜'],['새우','🦐'],['닭','🐓'],['소','🥩'],['돼지','🐷']];
+const CAT_COLORS=['#D85A30','#1D9E75','#378ADD','#7F77DD','#D4537E','#EF9F27','#639922','#BA7517'];
+const THEMES=[{name:'핑크',ac:'#D4537E',light:'#FBEAF0',border:'#ED93B1'},{name:'민트',ac:'#1D9E75',light:'#E1F5EE',border:'#6ECFB0'},{name:'블루',ac:'#378ADD',light:'#E6F1FB',border:'#8BBDE8'},{name:'보라',ac:'#7F77DD',light:'#EEEDFE',border:'#B3AEED'},{name:'오렌지',ac:'#D85A30',light:'#FAECE7',border:'#E8956A'},{name:'골드',ac:'#BA7517',light:'#FAEEDA',border:'#DBA84A'},{name:'초록',ac:'#3B6D11',light:'#EAF3DE',border:'#7EAA44'},{name:'인디고',ac:'#4361A8',light:'#E8EDF8',border:'#8AA3D4'}];
+const SORT_OPTIONS=[{id:'cat',label:'카테고리'},{id:'expire',label:'기한 임박'},{id:'qty_asc',label:'재고 적은 순'},{id:'qty_desc',label:'재고 많은 순'},{id:'name',label:'이름순'},{id:'made',label:'최근 제조'}];
+const PARTICLE_LABELS=['1단계 (고운)','2단계 (2-3mm)','3단계 (4-5mm)'];
+
+// ── 기기 고유 ID (localStorage에 저장) ──
+function getUid(){let uid=localStorage.getItem('baby_cube_uid');if(!uid){uid='u'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);localStorage.setItem('baby_cube_uid',uid);}return uid;}
+const UID=getUid();
+
+// ── 로컬 캐시 (빠른 UI 업데이트용) ──
+let cache={babies:[],cubes:[],categories:[],history:[],settings:{theme_idx:0,active_baby_id:null}};
+let currentSort='cat',calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),selectedCalDate=null;
+let multiRowCount=1,selectedColor=CAT_COLORS[0],editingMemoId=null,catOpen={},histFilter='all',selectedAv='👶';
+
+// ── API 헬퍼 ──
+async function api(method,path,body){
+  setSyncState('saving');
+  try{
+    const opts={method,headers:{'Content-Type':'application/json'}};
+    if(body)opts.body=JSON.stringify(body);
+    const sep=path.includes('?')?'&':'?';
+    const res=await fetch(`${API_BASE}${path}${sep}uid=${UID}`,opts);
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||res.statusText);}
+    const data=await res.json();
+    setSyncState('saved');
+    return data;
+  }catch(e){
+    setSyncState('error');
+    showToast('⚠️ 저장 실패: '+e.message);
+    throw e;
+  }
+}
+function setSyncState(s){const d=document.getElementById('sync-dot');if(d){d.className='sync-dot '+s;if(s==='saved')setTimeout(()=>{if(d.classList.contains('saved'))d.className='sync-dot';},2000);}}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── 데이터 로드 ──
+async function loadAll(){
+  try{
+    const [babies,cats,settings]=await Promise.all([api('GET','/api/babies'),api('GET','/api/categories'),api('GET','/api/settings')]);
+    cache.babies=babies;cache.categories=cats;cache.settings=settings||{theme_idx:0,active_baby_id:null};
+    if(!cache.settings.active_baby_id&&babies.length)cache.settings.active_baby_id=babies[0].id;
+    applyTheme(cache.settings.theme_idx||0);
+    const b=activeBaby();
+    const [cubes,history]=await Promise.all([
+      api('GET',b?`/api/cubes?baby_id=${b.id}`:'/api/cubes'),
+      api('GET',b?`/api/history?baby_id=${b.id}&limit=100`:'/api/history?limit=100')
+    ]);
+    cache.cubes=cubes;cache.history=history;
+    document.getElementById('uid-display').textContent=UID;
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    render();
+  }catch(e){
+    document.getElementById('loading-screen').innerHTML='<div style="text-align:center;padding:20px;color:#888"><div style="font-size:32px;margin-bottom:10px">⚠️</div><div style="font-size:14px;margin-bottom:8px">서버 연결 실패</div><div style="font-size:12px;color:#aaa">'+e.message+'</div><button onclick="loadAll()" style="margin-top:14px;padding:8px 20px;background:#D4537E;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">다시 시도</button></div>';
+  }
+}
+
+function lookupFood(n){const t=n.trim();for(const[k,e,c]of FOOD_MAP){if(t===k)return{emoji:e,cat:c};}for(const[k,e,c]of FOOD_MAP){if(t.includes(k))return{emoji:e,cat:c};}return{emoji:'🍱',cat:null};}
+function getCatEmoji(n){const t=n.trim();for(const[k,e]of CAT_EMOJI_MAP){if(t===k||t.includes(k))return e;}return'📦';}
+function activeBaby(){return cache.babies.find(b=>b.id===cache.settings.active_baby_id)||cache.babies[0]||null;}
+function babyCubes(){const b=activeBaby();if(!b)return cache.cubes;return cache.cubes.filter(c=>c.baby_id===b.id);}
+function getDaysLeft(d){if(!d)return null;return Math.ceil((new Date(d)-new Date())/864e5);}
+function formatDate(d){if(!d)return'-';const dt=new Date(d);return`${dt.getMonth()+1}/${dt.getDate()}`;}
+function formatDateTime(ts){const dt=new Date(ts*1000||ts);return`${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;}
+function getDplus(b){if(!b)return null;return Math.floor((new Date()-new Date(b))/864e5)+1;}
+function findDuplicates(cubes){const m={};cubes.forEach(c=>{const k=(c.name||'').trim().toLowerCase();(m[k]=m[k]||[]).push(c.id);});const s=new Set();Object.values(m).forEach(ids=>{if(ids.length>1)ids.forEach(id=>s.add(id));});return s;}
+function applyTheme(i){const t=THEMES[i]||THEMES[0];document.documentElement.style.setProperty('--ac',t.ac);document.documentElement.style.setProperty('--ac-light',t.light);document.documentElement.style.setProperty('--ac-border',t.border);}
+function uid8(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
+function render(){renderBabyChip();renderHome();renderCubes();renderCatManage();renderHistory();renderCalendar();}
+
+// ── 아기 칩 ──
+function renderBabyChip(){
+  const area=document.getElementById('baby-chip-area');
+  if(!cache.babies.length){area.innerHTML=`<div class="baby-chip" onclick="openBabyModal()"><span>👶</span><span style="color:var(--text2)">아기 추가</span></div>`;return;}
+  area.innerHTML=cache.babies.map(b=>{const dp=getDplus(b.bday);const ia=b.id===cache.settings.active_baby_id;return`<div class="baby-chip${ia?' active-chip':''}" onclick="switchBaby('${b.id}')"><span>${b.avatar||'👶'}</span><span>${b.name}</span>${ia&&dp!==null?`<span class="baby-chip-days">D+${dp}</span>`:''}</div>`;}).join('');
+}
+function openBabyModal(){renderBabyList();document.getElementById('add-baby-form').style.display='none';document.getElementById('baby-modal').classList.add('open');}
+function renderBabyList(){const bl=document.getElementById('baby-list');if(!bl)return;if(!cache.babies.length){bl.innerHTML=`<div style="font-size:13px;color:var(--text2);text-align:center;padding:10px">등록된 아기가 없어요</div>`;return;}bl.innerHTML=cache.babies.map(b=>{const dp=getDplus(b.bday);return`<div class="baby-row${b.id===cache.settings.active_baby_id?' active-baby':''}" onclick="switchBaby('${b.id}')"><div class="baby-avatar">${b.avatar||'👶'}</div><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${b.name}</div><div style="font-size:11px;color:var(--text2)">${b.bday?`${b.bday} · D+${dp}`:'생일 미등록'}</div></div><button onclick="deleteBaby('${b.id}',event)" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:15px"><i class="ti ti-trash"></i></button></div>`;}).join('');}
+async function switchBaby(id,e){if(e)e.stopPropagation();cache.settings.active_baby_id=id;await api('POST','/api/settings',cache.settings);const b=cache.babies.find(x=>x.id===id);const[cubes,history]=await Promise.all([api('GET',`/api/cubes?baby_id=${id}`),api('GET',`/api/history?baby_id=${id}&limit=100`)]);cache.cubes=cubes;cache.history=history;render();renderBabyList();}
+function toggleAddBabyForm(){const f=document.getElementById('add-baby-form');f.style.display=f.style.display==='none'?'block':'none';}
+function selectAv(el){selectedAv=el.dataset.av;document.querySelectorAll('.av-opt').forEach(e=>{e.style.borderColor='transparent';e.style.background='none';});el.style.borderColor='var(--ac)';el.style.background='var(--ac-light)';}
+async function saveBaby(){const name=document.getElementById('baby-name-input')?.value?.trim();if(!name)return alert('이름을 입력해주세요');const bday=document.getElementById('baby-bday-input')?.value||'';const baby={id:'b'+uid8(),name,bday,avatar:selectedAv};await api('POST','/api/babies',baby);cache.babies.push(baby);if(!cache.settings.active_baby_id){cache.settings.active_baby_id=baby.id;await api('POST','/api/settings',cache.settings);}document.getElementById('add-baby-form').style.display='none';renderBabyList();renderBabyChip();}
+async function deleteBaby(id,e){if(e)e.stopPropagation();if(!confirm('이 아기를 삭제하시겠어요?'))return;await api('DELETE',`/api/babies/${id}`);cache.babies=cache.babies.filter(b=>b.id!==id);if(cache.settings.active_baby_id===id){cache.settings.active_baby_id=cache.babies[0]?.id||null;await api('POST','/api/settings',cache.settings);}renderBabyList();renderBabyChip();}
+
+// ── 홈 ──
+function renderHome(){
+  const cubes=babyCubes();const expiring=cubes.filter(c=>{const d=getDaysLeft(c.expire_date);return d!==null&&d<=3&&d>=0;});const expired=cubes.filter(c=>{const d=getDaysLeft(c.expire_date);return d!==null&&d<0;});const dupIds=findDuplicates(cubes);
+  document.getElementById('stats-area').innerHTML=`<div class="stat-row"><div class="stat-card"><div><div class="stat-label">등록된 품목</div><div style="font-size:11px;color:var(--text2);margin-top:1px">${cache.categories.length}개 카테고리</div></div><div class="stat-val">${cubes.length}<span style="font-size:12px;font-weight:400;color:var(--text2)">종</span></div></div></div>`;
+  let alerts='';
+  if(expired.length)alerts+=`<div class="alert-box danger"><div class="alert-title"><i class="ti ti-alert-circle"></i>유통기한 초과 (${expired.length}개)</div><ul>${expired.map(c=>`<li onclick="goToCube('${c.id}')">${c.emoji} ${c.name} — ${formatDate(c.expire_date)}</li>`).join('')}</ul></div>`;
+  if(expiring.length)alerts+=`<div class="alert-box warn"><div class="alert-title"><i class="ti ti-clock"></i>3일 이내 만료 (${expiring.length}개)</div><ul>${expiring.map(c=>`<li onclick="goToCube('${c.id}')">${c.emoji} ${c.name} — D-${getDaysLeft(c.expire_date)}</li>`).join('')}</ul></div>`;
+  if(dupIds.size){const names=[...new Set(cubes.filter(c=>dupIds.has(c.id)).map(c=>c.name))];alerts+=`<div class="alert-box warn"><div class="alert-title"><i class="ti ti-copy"></i>동명 큐브 있음</div><ul>${names.map(n=>`<li>${lookupFood(n).emoji} ${n}</li>`).join('')}</ul></div>`;}
+  document.getElementById('expire-alerts').innerHTML=alerts;
+}
+function goToCube(id){const cube=cache.cubes.find(c=>c.id===id);if(!cube)return;switchTab('cubes','tab-cubes');const si=document.getElementById('search-input');if(si)si.value=cube.name;catOpen[cube.cat_id]=true;renderCubes();setTimeout(()=>{const el=document.getElementById('catbody-'+cube.cat_id);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},100);}
+
+// ── 캘린더 ──
+function renderCalendar(){
+  const months=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('cal-title').textContent=`${calYear}년 ${months[calMonth]}`;
+  document.getElementById('cal-labels').innerHTML=['일','월','화','수','목','금','토'].map(d=>`<div class="cal-day-label">${d}</div>`).join('');
+  const firstDay=new Date(calYear,calMonth,1).getDay(),lastDate=new Date(calYear,calMonth+1,0).getDate();
+  const todayStr=new Date().toISOString().split('T')[0];
+  const cubes=babyCubes();const evMap={};cubes.forEach(c=>{if(c.expire_date){const k=c.expire_date.substring(0,10);(evMap[k]=evMap[k]||[]).push(c);}});
+  let cells='';
+  for(let i=0;i<firstDay;i++){const pd=new Date(calYear,calMonth,-(firstDay-i-2));cells+=`<div class="cal-cell other-month"><div class="cal-date">${pd.getDate()}</div></div>`;}
+  for(let d=1;d<=lastDate;d++){const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const ev=evMap[ds]||[];const cls=['cal-cell',ds===todayStr?'today':'',ev.length?'has-ev':'',ds===selectedCalDate?'selected':''].filter(Boolean).join(' ');cells+=`<div class="${cls}" onclick="selectCalDate('${ds}')"><div class="cal-date">${d}</div>${ev.length?`<div class="cal-dots">${ev.slice(0,3).map(e=>{const dl=getDaysLeft(e.expire_date);return`<div class="cal-dot" style="background:${dl<0?'#D85A30':dl<=3?'#EF9F27':'#1D9E75'}"></div>`;}).join('')}</div>`:''}</div>`;}
+  document.getElementById('cal-cells').innerHTML=cells;
+  const showDate=selectedCalDate;const listItems=showDate?(evMap[showDate]||[]):Object.entries(evMap).filter(([k])=>k.startsWith(`${calYear}-${String(calMonth+1).padStart(2,'0')}`)).flatMap(([,v])=>v).sort((a,b)=>a.expire_date>b.expire_date?1:-1);const listTitle=showDate?`${new Date(showDate).getMonth()+1}/${new Date(showDate).getDate()} 만료`:`${months[calMonth]} 전체`;
+  document.getElementById('cal-ev-list').innerHTML=listItems.length?`<div class="cal-ev-list"><div style="font-size:10px;color:var(--text2);margin-bottom:5px">${listTitle} · ${listItems.length}개</div>${listItems.map(c=>{const dl=getDaysLeft(c.expire_date);const col=dl<0?'#D85A30':dl<=3?'#EF9F27':'#1D9E75';return`<div class="cal-ev-item" onclick="goToCube('${c.id}')"><div class="cal-ev-dot" style="background:${col}"></div><div class="cal-ev-name">${c.emoji} ${c.name}</div><div class="cal-ev-sub">재고 ${c.qty}개${showDate?'':` · ${formatDate(c.expire_date)}`}</div></div>`;}).join('')}</div>`:showDate?`<div class="cal-ev-list"><div style="font-size:11px;color:var(--text2);text-align:center;padding:6px">이 날 만료되는 큐브가 없어요</div></div>`:'';
+}
+function selectCalDate(ds){selectedCalDate=selectedCalDate===ds?null:ds;renderCalendar();}
+function calMove(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}else if(calMonth<0){calMonth=11;calYear--;}selectedCalDate=null;renderCalendar();}
+function calGoToday(){calYear=new Date().getFullYear();calMonth=new Date().getMonth();selectedCalDate=null;renderCalendar();}
+
+// ── 큐브 ──
+function getSortedCubes(){const q=(document.getElementById('search-input')?.value||'').toLowerCase();let cubes=babyCubes().filter(c=>!q||(c.name||'').toLowerCase().includes(q));if(currentSort==='expire')cubes=[...cubes].sort((a,b)=>(getDaysLeft(a.expire_date)??9999)-(getDaysLeft(b.expire_date)??9999));else if(currentSort==='qty_asc')cubes=[...cubes].sort((a,b)=>a.qty-b.qty);else if(currentSort==='qty_desc')cubes=[...cubes].sort((a,b)=>b.qty-a.qty);else if(currentSort==='name')cubes=[...cubes].sort((a,b)=>(a.name||'').localeCompare(b.name||'','ko'));else if(currentSort==='made')cubes=[...cubes].sort((a,b)=>((b.made_date||'')>(a.made_date||''))?1:-1);return cubes;}
+function renderCubes(){
+  document.getElementById('sort-bar').innerHTML=SORT_OPTIONS.map(s=>`<div class="sort-chip${s.id===currentSort?' active':''}" onclick="setSort('${s.id}')">${s.label}</div>`).join('');
+  const cubes=getSortedCubes();const dupIds=findDuplicates(cubes);
+  if(!cubes.length){document.getElementById('cubes-list').innerHTML=`<div class="empty-state"><i class="ti ti-box"></i><p>${document.getElementById('search-input')?.value?'검색 결과가 없어요':'등록된 큐브가 없어요'}</p></div>`;return;}
+  if(currentSort==='cat'){
+    let html='';
+    for(const cat of cache.categories){const items=cubes.filter(c=>c.cat_id===cat.id);if(!items.length)continue;const isOpen=catOpen[cat.id]===true;html+=`<div class="cat-section"><div class="cat-header" onclick="toggleCat('${cat.id}')"><div class="cat-header-left"><span style="font-size:16px">${cat.emoji}</span><span>${cat.name}</span></div><div style="display:flex;align-items:center;gap:7px"><span class="cat-badge">${items.length}종 · ${items.reduce((s,c)=>s+c.qty,0)}개</span><i class="ti ti-chevron-down cat-chevron${isOpen?' open':''}" id="chev-${cat.id}"></i></div></div><div class="cat-body${isOpen?' open':''}" id="catbody-${cat.id}">${items.map(c=>renderCubeCard(c,dupIds)).join('')}</div></div>`;}
+    const uncat=cubes.filter(c=>!cache.categories.find(x=>x.id===c.cat_id));if(uncat.length){const isOpen=catOpen['_uncat']===true;html+=`<div class="cat-section"><div class="cat-header" onclick="toggleCat('_uncat')"><div class="cat-header-left"><span>📦</span><span>기타</span></div><div style="display:flex;align-items:center;gap:7px"><span class="cat-badge">${uncat.length}종</span><i class="ti ti-chevron-down cat-chevron${isOpen?' open':''}" id="chev-_uncat"></i></div></div><div class="cat-body${isOpen?' open':''}" id="catbody-_uncat">${uncat.map(c=>renderCubeCard(c,dupIds)).join('')}</div></div>`;}
+    document.getElementById('cubes-list').innerHTML=html;
+  }else{document.getElementById('cubes-list').innerHTML=cubes.map(c=>renderCubeCard(c,dupIds)).join('');}
+}
+function toggleCat(id){catOpen[id]=catOpen[id]===true?false:true;const body=document.getElementById('catbody-'+id);const chev=document.getElementById('chev-'+id);if(body)body.classList.toggle('open',catOpen[id]===true);if(chev)chev.classList.toggle('open',catOpen[id]===true);}
+function renderCubeCard(cube,dupIds){
+  const days=getDaysLeft(cube.expire_date);let pc='pill-ok',pt='기한 없음';
+  if(days!==null){if(days<0){pc='pill-expired';pt=`만료 ${Math.abs(days)}일 지남`;}else if(days<=3){pc='pill-urgent';pt=`D-${days}`;}else if(days<=7){pc='pill-soon';pt=`D-${days}`;}else{pc='pill-ok';pt=`D-${days}`;}}
+  const isDup=dupIds&&dupIds.has(cube.id);
+  const ab=cube.allergy==='yes'?`<span class="allergy-badge allergy-yes">⚠️ 알러지</span>`:cube.allergy==='no'?`<span class="allergy-badge allergy-no">✓ 이상없음</span>`:'';
+  const pp=cube.particle!==undefined?`<span class="meta-pill pill-particle">입자 ${PARTICLE_LABELS[cube.particle]||'1단계'}</span>`:'';
+  return`<div class="cube-card${isDup?' dup-flag':''}" id="cubecard-${cube.id}"><div class="cube-top"><div class="cube-name-wrap"><span style="font-size:18px">${cube.emoji}</span><span class="cube-name">${cube.name}</span>${ab}${isDup?`<span class="dup-badge"><i class="ti ti-copy" style="font-size:9px"></i> 동명</span>`:''}</div><div class="cube-right"><div class="qty-control"><button class="qty-btn" onclick="adjustQty('${cube.id}',-0.5)">−</button><span class="qty-val">${cube.qty}</span><button class="qty-btn" onclick="adjustQty('${cube.id}',0.5)">+</button></div><span class="qty-unit">개</span></div></div><div class="cube-meta"><span class="meta-pill ${pc}"><i class="ti ti-calendar" style="font-size:9px"></i>${pt}</span>${cube.made_date?`<span class="meta-pill pill-info">제조 ${formatDate(cube.made_date)}</span>`:''}${cube.weight?`<span class="meta-pill pill-info">${cube.weight}${cube.unit||'g'}/큐브</span>`:''}${pp}</div>${cube.note?`<div class="cube-note"><i class="ti ti-notes" style="font-size:10px"></i> ${cube.note}</div>`:''}<div class="cube-actions"><button class="cube-edit-btn" onclick="openEditModal('${cube.id}')"><i class="ti ti-edit" style="font-size:11px"></i> 수정</button><button class="cube-discard-btn" onclick="discardCube('${cube.id}')"><i class="ti ti-trash" style="font-size:11px"></i> 전량 폐기</button></div></div>`;
+}
+function setSort(id){currentSort=id;renderCubes();}
+
+async function adjustQty(id,delta){
+  const cube=cache.cubes.find(c=>c.id===id);if(!cube)return;
+  const prev=cube.qty;cube.qty=Math.max(0,Math.round((cube.qty+delta)*10)/10);
+  if(cube.qty!==prev){
+    renderCubes();
+    const b=activeBaby();
+    const hid='h'+uid8();
+    const hist={id:hid,baby_id:cube.baby_id,cube_name:cube.name,emoji:cube.emoji,type:delta<0?'used':'added',amount:Math.abs(delta),memo:''};
+    await Promise.all([api('PATCH',`/api/cubes/${id}`,{qty:cube.qty}),api('POST','/api/history',hist)]);
+    cache.history.unshift({...hist,created_at:Math.floor(Date.now()/1000)});
+  }
+}
+async function discardCube(id){
+  const cube=cache.cubes.find(c=>c.id===id);if(!cube)return;
+  if(!confirm(`${cube.emoji} ${cube.name} ${cube.qty}개를 전량 폐기할까요?\n기록은 남겨집니다.`))return;
+  const hid='h'+uid8();
+  const hist={id:hid,baby_id:cube.baby_id,cube_name:cube.name,emoji:cube.emoji,type:'discarded',amount:cube.qty,memo:'전량 폐기'};
+  await Promise.all([api('DELETE',`/api/cubes/${id}`),api('POST','/api/history',hist)]);
+  cache.cubes=cache.cubes.filter(c=>c.id!==id);
+  cache.history.unshift({...hist,created_at:Math.floor(Date.now()/1000)});
+  render();showToast('🗑 전량 폐기됐어요');
+}
+
+// ── 기록 ──
+function setHistFilter(f){histFilter=f;const map={all:'f-all',used:'f-used',added:'f-added',discarded:'f-discarded'};['all','used','added','discarded'].forEach(k=>{const el=document.getElementById('hf-'+k);if(!el)return;el.className='hist-filter';if(k===f)el.classList.add(map[k]);});renderHistory();}
+function renderHistory(){
+  const b=activeBaby();let items=[...cache.history].filter(h=>!b||!h.baby_id||h.baby_id===b.id).sort((a,c)=>c.created_at-a.created_at);
+  if(histFilter!=='all')items=items.filter(h=>h.type===histFilter);items=items.slice(0,100);
+  document.getElementById('history-list').innerHTML=items.length?items.map(h=>`<div class="history-item" onclick="openMemoModal('${h.id}')"><div class="history-icon ${h.type||'added'}"><i class="ti ti-${h.type==='used'?'minus':h.type==='discarded'?'trash':'plus'}"></i></div><div class="history-info"><div class="history-name">${h.emoji||'🍱'} ${h.cube_name||h.name||''}</div><div class="history-time">${formatDateTime(h.created_at)}</div>${h.memo?`<span class="history-memo"><i class="ti ti-notes" style="font-size:10px"></i> ${h.memo}</span>`:`<div class="memo-hint"><i class="ti ti-pencil" style="font-size:9px"></i>메모 추가</div>`}</div><div class="history-amount ${h.type||'added'}">${h.type==='used'?'-':h.type==='discarded'?'🗑':'+'}${h.amount}개</div></div>`).join(''):`<div class="empty-state"><i class="ti ti-history"></i><p>기록이 없어요</p></div>`;
+}
+function openMemoModal(hid){editingMemoId=hid;const h=cache.history.find(x=>x.id===hid);if(!h)return;document.getElementById('memo-modal-title').textContent=`${h.emoji||'🍱'} ${h.cube_name||h.name||''} — 메모`;document.getElementById('memo-input').value=h.memo||'';document.getElementById('memo-modal').classList.add('open');}
+async function saveMemo(){const h=cache.history.find(x=>x.id===editingMemoId);if(h){h.memo=document.getElementById('memo-input').value.trim();await api('PATCH',`/api/history/${h.id}`,{memo:h.memo});}closeModal('memo-modal');renderHistory();}
+
+// ── 큐브 추가/수정 ──
+function openAddModal(multi){document.getElementById('add-modal-title').textContent=multi?'일괄 추가':'큐브 추가';document.getElementById('add-modal-content').innerHTML=multi?buildMultiForm():buildSingleForm(null);multiRowCount=1;document.getElementById('add-modal').classList.add('open');}
+function openEditModal(id){const cube=cache.cubes.find(c=>c.id===id);if(!cube)return;document.getElementById('add-modal-title').textContent='큐브 수정';document.getElementById('add-modal-content').innerHTML=buildSingleForm(cube);document.getElementById('add-modal').classList.add('open');}
+function buildCatOptions(selId){return cache.categories.map(c=>`<option value="${c.id}"${c.id===selId?' selected':''}>${c.emoji} ${c.name}</option>`).join('')+`<option value="__new__">＋ 새 카테고리 만들기</option>`;}
+function onCatChange(sel){if(sel.value==='__new__'){sel.value=sel.dataset.prev||cache.categories[0]?.id||'';openInlineCatForm();}else{sel.dataset.prev=sel.value;}}
+function openInlineCatForm(){const f=document.getElementById('inline-cat-form');if(f){f.classList.add('open');const ic=document.getElementById('ic-name');const ie=document.getElementById('ic-emoji');const ip=document.getElementById('ic-emoji-preview');if(ic)ic.value='';if(ie){ie.value='📦';ie.dataset.userEdited='';}if(ip)ip.textContent='📦';}}
+function onIcNameInput(){const name=document.getElementById('ic-name')?.value||'';const emoji=getCatEmoji(name);const prev=document.getElementById('ic-emoji');const preview=document.getElementById('ic-emoji-preview');if(prev&&!prev.dataset.userEdited)prev.value=emoji;if(preview)preview.textContent=emoji;}
+function onIcEmojiInput(){const el=document.getElementById('ic-emoji');const preview=document.getElementById('ic-emoji-preview');if(el){el.dataset.userEdited=el.value?'1':'';if(preview)preview.textContent=el.value||getCatEmoji(document.getElementById('ic-name')?.value||'');}}
+async function saveInlineCat(){const name=document.getElementById('ic-name')?.value?.trim();if(!name)return alert('이름을 입력해주세요');const emojiInput=document.getElementById('ic-emoji')?.value?.trim();const emoji=emojiInput||getCatEmoji(name);const color=CAT_COLORS[Math.floor(Math.random()*CAT_COLORS.length)];const id=uid8();const cat={id,name,emoji,color,is_default:0};await api('POST','/api/categories',cat);cache.categories.push(cat);renderCatManage();const sel=document.getElementById('f-cat');if(sel){const opt=document.createElement('option');opt.value=id;opt.textContent=`${emoji} ${name}`;opt.selected=true;sel.insertBefore(opt,sel.lastElementChild);sel.value=id;sel.dataset.prev=id;}document.getElementById('inline-cat-form').classList.remove('open');}
+function buildSingleForm(cube){
+  const today=new Date().toISOString().split('T')[0];const id=cube?cube.id:'';const al=cube?cube.allergy:'unknown';const pt=cube?(cube.particle||0):0;
+  return`<div class="form-group"><label class="form-label">큐브 이름</label><input type="text" class="form-input" id="f-name" placeholder="예: 당근, 양배추, 오이..." value="${cube?.name||''}" oninput="onNameInput()"></div><div class="emoji-preview" id="emoji-preview">${cube?.emoji||'🍱'}</div><div class="form-group"><label class="form-label">카테고리</label><select class="form-select" id="f-cat" onchange="onCatChange(this)" data-prev="${cube?.cat_id||cache.categories[0]?.id||''}">${buildCatOptions(cube?.cat_id||cache.categories[0]?.id||'')}</select><div class="inline-cat-form" id="inline-cat-form"><div style="font-size:12px;font-weight:600;margin-bottom:7px;color:var(--text2)">새 카테고리</div><div class="form-group" style="margin-bottom:8px"><label class="form-label">이름</label><input type="text" class="form-input" id="ic-name" placeholder="예: 간식" oninput="onIcNameInput()"></div><div class="form-group" style="margin-bottom:8px"><label class="form-label">이모티콘</label><div class="ic-emoji-row"><span class="ic-emoji-preview" id="ic-emoji-preview">📦</span><input type="text" class="form-input" id="ic-emoji" placeholder="직접 입력 (선택)" maxlength="2" oninput="onIcEmojiInput()" style="flex:1"></div><div style="font-size:10px;color:var(--text2);margin-top:3px">이름을 입력하면 자동으로 설정돼요</div></div><button type="button" onclick="saveInlineCat()" style="padding:6px 14px;background:var(--ac);color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer">추가</button><button type="button" onclick="document.getElementById('inline-cat-form').classList.remove('open')" style="margin-left:6px;padding:6px 14px;background:none;border:1px solid var(--border);border-radius:7px;font-size:13px;cursor:pointer;color:var(--text)">취소</button></div></div><div class="form-row"><div class="form-group"><label class="form-label">수량 (개)</label><input type="number" class="form-input" id="f-qty" min="0" step="0.5" value="${cube?.qty||1}"></div><div class="form-group"><label class="form-label">용량</label><div style="display:flex;gap:5px"><input type="number" class="form-input" id="f-weight" placeholder="15" value="${cube?.weight||''}" style="flex:1"><select class="form-select" id="f-unit" style="width:65px"><option value="g"${cube?.unit==='g'?' selected':''}>g</option><option value="ml"${cube?.unit==='ml'?' selected':''}>ml</option></select></div></div></div><div class="form-group"><label class="form-label">입자 크기</label><div class="particle-toggle"><div class="particle-opt${pt===0?' sel-p':''}" onclick="selParticle(0,this)"><div>1단계</div><div style="font-size:10px;margin-top:2px">고운 입자</div></div><div class="particle-opt${pt===1?' sel-p':''}" onclick="selParticle(1,this)"><div>2단계</div><div style="font-size:10px;margin-top:2px">2–3mm</div></div><div class="particle-opt${pt===2?' sel-p':''}" onclick="selParticle(2,this)"><div>3단계</div><div style="font-size:10px;margin-top:2px">4–5mm</div></div></div></div><div class="form-row"><div class="form-group"><label class="form-label">제조일</label><input type="date" class="form-input" id="f-made" value="${cube?.made_date||today}"></div><div class="form-group"><label class="form-label">사용기한</label><input type="date" class="form-input" id="f-expire" value="${cube?.expire_date||''}"></div></div><div class="form-group"><div class="expire-options"><div class="expire-opt" onclick="quickExpire(7,this)">+1주</div><div class="expire-opt" onclick="quickExpire(14,this)">+2주</div><div class="expire-opt" onclick="quickExpire(21,this)">+3주</div><div class="expire-opt" onclick="quickExpire(30,this)">+1달</div><div class="expire-opt" onclick="quickExpire(90,this)">+3달</div></div></div><div class="form-group"><label class="form-label">알러지 반응</label><div class="allergy-toggle"><div class="allergy-opt${al==='no'?' sel-no':''}" id="al-no" onclick="setAllergy('no')">✓ 이상없음</div><div class="allergy-opt${al==='yes'?' sel-yes':''}" id="al-yes" onclick="setAllergy('yes')">⚠️ 알러지</div><div class="allergy-opt${al==='unknown'?' sel-uk':''}" id="al-uk" onclick="setAllergy('unknown')">미확인</div></div></div><div class="form-group"><label class="form-label">메모</label><textarea class="form-input" id="f-note" rows="2" placeholder="예: 첫 도입, 두드러기 없음...">${cube?.note||''}</textarea></div><button class="btn-primary" onclick="saveCube('${id}')">저장</button><button class="btn-secondary" onclick="closeModal('add-modal')">취소</button>${cube?`<button class="btn-danger" onclick="deleteCube('${cube.id}')">삭제</button>`:''}`;
+}
+function selParticle(val,el){document.querySelectorAll('.particle-opt').forEach(e=>e.classList.remove('sel-p'));el.classList.add('sel-p');}
+function setAllergy(val){['no','yes','uk'].forEach(k=>{const el=document.getElementById('al-'+k);if(!el)return;el.className='allergy-opt';if(k==='no'&&val==='no')el.classList.add('sel-no');if(k==='yes'&&val==='yes')el.classList.add('sel-yes');if(k==='uk'&&val==='unknown')el.classList.add('sel-uk');});}
+function onNameInput(){const name=document.getElementById('f-name')?.value||'';const{emoji,cat}=lookupFood(name);const ep=document.getElementById('emoji-preview');if(ep)ep.textContent=emoji||'🍱';if(cat){const sel=document.getElementById('f-cat');if(sel&&sel.value!=='__new__')sel.value=cat;}}
+function quickExpire(days,el){document.querySelectorAll('#add-modal .expire-opt').forEach(e=>e.classList.remove('selected'));el.classList.add('selected');const made=document.getElementById('f-made')?.value;const base=made?new Date(made):new Date();base.setDate(base.getDate()+days);const inp=document.getElementById('f-expire');if(inp)inp.value=base.toISOString().split('T')[0];}
+async function saveCube(editId){
+  const name=document.getElementById('f-name')?.value?.trim();if(!name)return alert('이름을 입력해주세요');
+  const{emoji}=lookupFood(name);const alYes=document.getElementById('al-yes');const alNo=document.getElementById('al-no');let allergy='unknown';if(alYes&&alYes.classList.contains('sel-yes'))allergy='yes';else if(alNo&&alNo.classList.contains('sel-no'))allergy='no';
+  const selCat=document.getElementById('f-cat');const catId=selCat&&selCat.value!=='__new__'?selCat.value:cache.categories[0]?.id||'';
+  const pEl=document.querySelector('.particle-opt.sel-p');let particle=0;if(pEl){const t=pEl.textContent;if(t.includes('2단계'))particle=1;else if(t.includes('3단계'))particle=2;}
+  const b=activeBaby();
+  const cube={id:editId||uid8(),name,emoji,cat_id:catId,qty:parseFloat(document.getElementById('f-qty')?.value||0),weight:document.getElementById('f-weight')?.value||'',unit:document.getElementById('f-unit')?.value||'g',made_date:document.getElementById('f-made')?.value||null,expire_date:document.getElementById('f-expire')?.value||null,allergy,particle,note:document.getElementById('f-note')?.value?.trim()||'',baby_id:b?b.id:null};
+  const btn=document.querySelector('#add-modal .btn-primary');if(btn)btn.disabled=true;
+  if(editId){await api('PUT',`/api/cubes/${editId}`,cube);const idx=cache.cubes.findIndex(c=>c.id===editId);if(idx>=0)cache.cubes[idx]=cube;}
+  else{await api('POST','/api/cubes',cube);cache.cubes.push(cube);const hid='h'+uid8();await api('POST','/api/history',{id:hid,baby_id:cube.baby_id,cube_name:cube.name,emoji,type:'added',amount:cube.qty,memo:''});cache.history.unshift({id:hid,baby_id:cube.baby_id,cube_name:cube.name,emoji,type:'added',amount:cube.qty,memo:'',created_at:Math.floor(Date.now()/1000)});}
+  closeModal('add-modal');render();showToast(editId?'✅ 수정됐어요':'✅ 추가됐어요');
+}
+async function deleteCube(id){if(!confirm('이 큐브를 삭제하시겠어요?'))return;await api('DELETE',`/api/cubes/${id}`);cache.cubes=cache.cubes.filter(c=>c.id!==id);closeModal('add-modal');render();}
+function buildMultiForm(){const today=new Date().toISOString().split('T')[0];return`<div class="form-row" style="margin-bottom:9px"><div class="form-group"><label class="form-label">공통 카테고리</label><select class="form-select" id="m-cat">${buildCatOptions(cache.categories[0]?.id||'')}</select></div><div class="form-group"><label class="form-label">공통 제조일</label><input type="date" class="form-input" id="m-made" value="${today}"></div></div><div class="form-group"><label class="form-label">공통 사용기한</label><div class="expire-options" style="margin-bottom:7px"><div class="expire-opt" onclick="qEM(7,this)">+1주</div><div class="expire-opt" onclick="qEM(14,this)">+2주</div><div class="expire-opt" onclick="qEM(21,this)">+3주</div><div class="expire-opt" onclick="qEM(90,this)">+3달</div></div><input type="date" class="form-input" id="m-expire"></div><div class="section-title" style="margin-top:7px">큐브 목록</div><div id="multi-rows"><div class="multi-add-row" data-idx="0"><input type="text" class="form-input" placeholder="이름" id="mr-name-0" style="padding:7px 9px"><input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-0" style="padding:7px 9px"></div></div><button class="add-row-btn" id="add-row-btn" onclick="addMultiRow()"><i class="ti ti-plus"></i> 항목 추가</button><button class="btn-primary" onclick="saveMultiCubes()">모두 저장</button><button class="btn-secondary" onclick="closeModal('add-modal')">취소</button>`;}
+function qEM(days,el){document.querySelectorAll('#add-modal .expire-opt').forEach(e=>e.classList.remove('selected'));el.classList.add('selected');const made=document.getElementById('m-made')?.value;const base=made?new Date(made):new Date();base.setDate(base.getDate()+days);const inp=document.getElementById('m-expire');if(inp)inp.value=base.toISOString().split('T')[0];}
+function addMultiRow(){const idx=multiRowCount++;const div=document.createElement('div');div.className='multi-add-row';div.dataset.idx=idx;div.innerHTML=`<input type="text" class="form-input" placeholder="이름" id="mr-name-${idx}" style="padding:7px 9px"><input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-${idx}" style="padding:7px 9px">`;document.getElementById('add-row-btn').before(div);}
+async function saveMultiCubes(){
+  const catId=document.getElementById('m-cat')?.value;const madeDate=document.getElementById('m-made')?.value;const expireDate=document.getElementById('m-expire')?.value;
+  const b=activeBaby();let added=0;const saves=[];
+  document.querySelectorAll('.multi-add-row').forEach(row=>{const idx=row.dataset.idx;const name=document.getElementById(`mr-name-${idx}`)?.value?.trim();if(!name)return;const qty=parseFloat(document.getElementById(`mr-qty-${idx}`)?.value||1);const{emoji,cat}=lookupFood(name);const cube={id:uid8(),name,emoji,cat_id:cat||catId,qty,weight:'',unit:'g',made_date:madeDate||null,expire_date:expireDate||null,allergy:'unknown',particle:0,note:'',baby_id:b?b.id:null};cache.cubes.push(cube);saves.push(api('POST','/api/cubes',cube));const hid='h'+uid8();saves.push(api('POST','/api/history',{id:hid,baby_id:cube.baby_id,cube_name:name,emoji,type:'added',amount:qty,memo:''}));cache.history.unshift({id:hid,baby_id:cube.baby_id,cube_name:name,emoji,type:'added',amount:qty,memo:'',created_at:Math.floor(Date.now()/1000)});added++;});
+  if(!added)return alert('최소 하나의 이름을 입력해주세요');
+  await Promise.all(saves);closeModal('add-modal');render();showToast(`✅ ${added}개 추가됐어요`);
+}
+
+// ── 카테고리 ──
+function renderCatManage(){document.getElementById('cat-manage-list').innerHTML=cache.categories.map(cat=>{const cnt=cache.cubes.filter(c=>c.cat_id===cat.id).length;return`<div style="display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:5px"><div style="width:30px;height:30px;border-radius:50%;background:${cat.color}22;display:flex;align-items:center;justify-content:center;font-size:15px">${cat.emoji}</div><div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">${cat.name}</div><div style="font-size:11px;color:var(--text2)">${cnt}개 큐브</div></div>${!cat.is_default?`<button onclick="deleteCategoryById('${cat.id}')" style="background:none;border:none;cursor:pointer;font-size:15px;color:var(--text2)"><i class="ti ti-trash"></i></button>`:''}</div>`;}).join('');}
+function openCategoryModal(){selectedColor=CAT_COLORS[0];document.getElementById('new-cat-name').value='';document.getElementById('new-cat-emoji').value='';document.getElementById('color-picker').innerHTML=CAT_COLORS.map((c,i)=>`<div class="color-dot${i===0?' sel':''}" style="background:${c}" onclick="selectCatColor('${c}',this)"></div>`).join('');document.getElementById('category-modal').classList.add('open');}
+function selectCatColor(c,el){selectedColor=c;document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('sel'));el.classList.add('sel');}
+async function saveCategory(){const name=document.getElementById('new-cat-name')?.value?.trim();if(!name)return alert('이름을 입력해주세요');const emoji=document.getElementById('new-cat-emoji')?.value||getCatEmoji(name);const id=uid8();const cat={id,name,emoji,color:selectedColor,is_default:0};await api('POST','/api/categories',cat);cache.categories.push(cat);closeModal('category-modal');render();}
+async function deleteCategoryById(id){if(!confirm('카테고리를 삭제하시겠어요?'))return;await api('DELETE',`/api/categories/${id}`);cache.categories=cache.categories.filter(c=>c.id!==id);render();}
+
+// ── 설정 ──
+function openSettings(){const tg=document.getElementById('theme-grid');if(tg)tg.innerHTML=THEMES.map((t,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="theme-swatch${i===(cache.settings.theme_idx||0)?' active':''}" style="background:${t.ac}" onclick="setTheme(${i})"></div><div style="font-size:10px;color:var(--text2)">${t.name}</div></div>`).join('');document.getElementById('settings-modal').classList.add('open');}
+async function setTheme(idx){cache.settings.theme_idx=idx;applyTheme(idx);await api('POST','/api/settings',cache.settings);const tg=document.getElementById('theme-grid');if(tg)tg.innerHTML=THEMES.map((t,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="theme-swatch${i===idx?' active':''}" style="background:${t.ac}" onclick="setTheme(${i})"></div><div style="font-size:10px;color:var(--text2)">${t.name}</div></div>`).join('');}
+async function clearAll(){await Promise.all([...cache.cubes.map(c=>api('DELETE',`/api/cubes/${c.id}`)),...cache.categories.filter(c=>!c.is_default).map(c=>api('DELETE',`/api/categories/${c.id}`)),...cache.babies.map(b=>api('DELETE',`/api/babies/${b.id}`))]);location.reload();}
+function openBabyModal(){renderBabyList();document.getElementById('add-baby-form').style.display='none';document.getElementById('baby-modal').classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function switchTab(name,tabId){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab,.tab-add-slot').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');const tel=document.getElementById(tabId);if(tel)tel.classList.add('active');}
+document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+
+loadAll();
+</script>
+</body>
+</html>
