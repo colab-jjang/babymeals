@@ -175,6 +175,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .form-group{margin-bottom:12px}
 .form-label{font-size:12px;color:var(--text2);margin-bottom:3px;display:block;font-weight:500}
 .form-input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;color:var(--text);background:var(--bg);transition:border-color .15s}
+input[type="date"].form-input{max-width:200px}
 .form-input:focus{outline:none;border-color:var(--ac)}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .form-select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;color:var(--text);background:var(--bg)}
@@ -392,7 +393,7 @@ function renderBabyChip(){
   if(!cache.babies.length){area.innerHTML=`<div class="baby-chip" onclick="openBabyModal()"><span>👶</span><span style="color:var(--text2)">아기 추가</span></div>`;return;}
   area.innerHTML=cache.babies.map(b=>{const dp=getDplus(b.bday);const ia=b.id===cache.settings.active_baby_id;return`<div class="baby-chip${ia?' active-chip':''}" onclick="switchBaby('${b.id}')"><span>${b.avatar||'👶'}</span><span>${b.name}</span>${ia&&dp!==null?`<span class="baby-chip-days">D+${dp}</span>`:''}</div>`;}).join('');
 }
-function openBabyModal(){selectedAv='👶';renderBabyList();document.getElementById('baby-modal').classList.add('open');}
+function openBabyModal(e){if(e)e.stopPropagation();selectedAv='👶';renderBabyList();document.getElementById('baby-modal').classList.add('open');}
 function renderBabyList(){
   const bl=document.getElementById('baby-list');if(!bl)return;
   const listHtml=cache.babies.length
