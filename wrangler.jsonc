@@ -7,10 +7,7 @@
   "observability": {
     "enabled": true
   },
-  "assets": {
-    "directory": "."
-  },
-  "d1_databases": [
+   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "baby-cube-db",
