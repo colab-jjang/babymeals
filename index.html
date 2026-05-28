@@ -134,6 +134,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 .cube-actions{display:flex;gap:5px;margin-top:7px}
 .cube-edit-btn{padding:4px 10px;font-size:11px;background:none;color:var(--text2);border:1px solid var(--border);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:3px}
 .cube-discard-btn{padding:4px 10px;font-size:11px;background:#FAECE7;color:#D85A30;border:1px solid #D85A30;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:3px}
+.btn-use{flex:1;padding:10px;font-size:14px;font-weight:600;background:var(--ac-light);color:var(--ac);border:1px solid var(--ac-border);border-radius:8px;cursor:pointer;transition:all .15s}
+.btn-use:active{background:var(--ac);color:#fff}
 
 /* ── 기록 ── */
 .hist-filter-bar{display:flex;gap:5px;margin-bottom:10px}
@@ -169,13 +171,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-seri
 /* ── 모달 ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
 .modal-overlay.open{display:flex}
-.modal{background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:430px;padding:18px;max-height:88vh;overflow-y:auto;padding-bottom:32px}
+.modal{background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:430px;padding:18px;max-height:88vh;overflow-y:auto;overflow-x:hidden;padding-bottom:32px;box-sizing:border-box}
 .modal-handle{width:34px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
 .modal-title{font-size:16px;font-weight:700;margin-bottom:14px;color:var(--text)}
 .form-group{margin-bottom:12px}
 .form-label{font-size:12px;color:var(--text2);margin-bottom:3px;display:block;font-weight:500}
-.form-input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;color:var(--text);background:var(--bg);transition:border-color .15s}
-input[type="date"].form-input{max-width:200px}
+.form-input{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;color:var(--text);background:var(--bg);transition:border-color .15s;min-width:0;box-sizing:border-box}
+input[type="date"].form-input{width:160px;max-width:160px}
 .form-input:focus{outline:none;border-color:var(--ac)}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .form-select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;color:var(--text);background:var(--bg)}
@@ -220,6 +222,8 @@ input[type="date"].form-input{max-width:200px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
+#login-screen{background:var(--bg)}
+#login-screen .form-input{font-size:16px}
 </style>
 </head>
 <body>
@@ -229,6 +233,32 @@ input[type="date"].form-input{max-width:200px}
   <div style="font-size:13px;color:#888">데이터 불러오는 중...</div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- 로그인 화면 -->
+<div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:999;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:360px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:48px;margin-bottom:8px">🍼</div>
+      <div style="font-size:22px;font-weight:700;color:var(--text)">이유식 큐브 현황</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px">우리 아기 이유식을 스마트하게</div>
+    </div>
+    <div id="login-form">
+      <div class="form-group"><label class="form-label">이메일</label><input type="email" class="form-input" id="auth-email" placeholder="example@email.com" autocomplete="email"></div>
+      <div class="form-group"><label class="form-label">비밀번호</label><input type="password" class="form-input" id="auth-password" placeholder="6자 이상" autocomplete="current-password"></div>
+      <div id="auth-error" style="font-size:13px;color:#D85A30;margin-bottom:8px;display:none"></div>
+      <button class="btn-primary" id="login-btn" onclick="doLogin()">로그인</button>
+      <button class="btn-secondary" onclick="showRegister()" style="margin-top:8px">처음이에요 — 회원가입</button>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="form-group"><label class="form-label">이메일</label><input type="email" class="form-input" id="reg-email" placeholder="example@email.com" autocomplete="email"></div>
+      <div class="form-group"><label class="form-label">비밀번호</label><input type="password" class="form-input" id="reg-password" placeholder="6자 이상" autocomplete="new-password"></div>
+      <div class="form-group"><label class="form-label">비밀번호 확인</label><input type="password" class="form-input" id="reg-password2" placeholder="비밀번호 재입력" autocomplete="new-password"></div>
+      <div id="reg-error" style="font-size:13px;color:#D85A30;margin-bottom:8px;display:none"></div>
+      <button class="btn-primary" id="register-btn" onclick="doRegister()">회원가입</button>
+      <button class="btn-secondary" onclick="showLogin()" style="margin-top:8px">이미 계정이 있어요 — 로그인</button>
+    </div>
+  </div>
+</div>
 
 <div id="app" style="display:none">
   <div class="header">
@@ -303,6 +333,28 @@ input[type="date"].form-input{max-width:200px}
 <!-- 모달들 -->
 <div class="modal-overlay" id="add-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="add-modal-title">큐브 추가</div><div id="add-modal-content"></div></div></div>
 <div class="modal-overlay" id="memo-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="memo-modal-title">메모</div><div class="form-group"><label class="form-label">메모 내용</label><textarea class="form-input" id="memo-input" rows="3" placeholder="예: 오전 이유식에 사용..."></textarea></div><button class="btn-primary" onclick="saveMemo()">저장</button><button class="btn-secondary" onclick="closeModal('memo-modal')">취소</button></div></div>
+
+<div class="modal-overlay" id="use-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="use-modal-title">사용하기</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:20px;padding:20px 0">
+      <button onclick="changeUseAmt(-0.5)" style="width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg2);font-size:22px;cursor:pointer;color:var(--text)">−</button>
+      <div style="text-align:center">
+        <div id="use-amt-val" style="font-size:44px;font-weight:700;color:var(--text);min-width:80px">1</div>
+        <div style="font-size:13px;color:var(--text2)">개</div>
+      </div>
+      <button onclick="changeUseAmt(0.5)" style="width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:var(--bg2);font-size:22px;cursor:pointer;color:var(--text)">+</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);text-align:center;margin-bottom:12px">0.5개 단위로 차감</div>
+    <div class="form-group">
+      <label class="form-label">메모 (선택)</label>
+      <input type="text" class="form-input" id="use-memo-input" placeholder="예: 오전 이유식, 당근죽에 사용...">
+    </div>
+    <button class="btn-primary" onclick="confirmUse()">사용 확인</button>
+    <button class="btn-secondary" onclick="closeModal('use-modal')">취소</button>
+  </div>
+</div>
 <div class="modal-overlay" id="baby-modal" onclick="if(event.target===this)closeModal('baby-modal')">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
@@ -310,10 +362,8 @@ input[type="date"].form-input{max-width:200px}
     <div id="baby-list"></div>
     <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:12px">
       <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">아기 추가</div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="baby-name-input" placeholder="예: 하준"></div>
-        <div class="form-group"><label class="form-label">생일</label><input type="date" class="form-input" id="baby-bday-input"></div>
-      </div>
+      <div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="baby-name-input" placeholder="예: 하준"></div>
+      <div class="form-group"><label class="form-label">생일</label><input type="date" class="form-input" id="baby-bday-input"></div>
       <div class="form-group"><label class="form-label">아바타</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:5px">
           <span style="font-size:24px;cursor:pointer;padding:3px;border-radius:7px;border:2px solid var(--ac);background:var(--ac-light)" class="av-opt" data-av="👶" onclick="selectAv(this)">👶</span>
@@ -330,7 +380,7 @@ input[type="date"].form-input{max-width:200px}
   </div>
 </div>
 <div class="modal-overlay" id="category-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">카테고리 추가</div><div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="new-cat-name" placeholder="예: 단백질, 해산물..."></div><div class="form-group"><label class="form-label">색상</label><div class="color-row" id="color-picker"></div></div><div class="form-group"><label class="form-label">이모티콘</label><input type="text" class="form-input" id="new-cat-emoji" placeholder="🥕" maxlength="2"></div><button class="btn-primary" onclick="saveCategory()">저장</button><button class="btn-secondary" onclick="closeModal('category-modal')">취소</button></div></div>
-<div class="modal-overlay" id="settings-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">설정</div><div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:8px">🔒 데이터는 Cloudflare D1 서버에 저장됩니다.<br>기기 ID: <span id="uid-display" style="font-family:monospace;font-size:11px"></span></div><div class="form-group"><label class="form-label">테마 색상</label><div class="theme-grid" id="theme-grid"></div></div><button class="btn-secondary" onclick="closeModal('settings-modal');setTimeout(openBabyModal,150)" style="margin-top:4px">👶 아기 관리</button><button class="btn-danger" onclick="if(confirm('모든 데이터를 삭제하시겠어요?')){clearAll()}" style="margin-top:7px">데이터 초기화</button><button class="btn-secondary" onclick="closeModal('settings-modal')" style="margin-top:7px">닫기</button></div></div>
+<div class="modal-overlay" id="settings-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">설정</div><div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:8px">🔒 <span id="user-email-display">로그인됨</span></div><div class="form-group"><label class="form-label">테마 색상</label><div class="theme-grid" id="theme-grid"></div></div><button class="btn-secondary" onclick="closeModal('settings-modal');setTimeout(openBabyModal,150)" style="margin-top:4px">👶 아기 관리</button><button class="btn-danger" onclick="if(confirm('모든 데이터를 삭제하시겠어요?')){clearAll()}" style="margin-top:7px">데이터 초기화</button><button class="btn-secondary" onclick="if(confirm('로그아웃 할까요?')){doLogout()}" style="margin-top:7px;color:#D85A30">로그아웃</button><button class="btn-secondary" onclick="closeModal('settings-modal')" style="margin-top:7px">닫기</button></div></div>
 
 <script>
 // ════════════════════════════════════════
@@ -346,11 +396,13 @@ const THEMES=[{name:'핑크',ac:'#D4537E',light:'#FBEAF0',border:'#ED93B1'},{nam
 const SORT_OPTIONS=[{id:'cat',label:'카테고리'},{id:'expire',label:'기한 임박'},{id:'qty_asc',label:'재고 적은 순'},{id:'qty_desc',label:'재고 많은 순'},{id:'name',label:'이름순'},{id:'made',label:'최근 제조'}];
 const PARTICLE_LABELS=['1단계 (고운)','2단계 (2-3mm)','3단계 (4-5mm)'];
 
-// ── 기기 고유 ID (localStorage에 저장) ──
-function getUid(){let uid=localStorage.getItem('baby_cube_uid');if(!uid){uid='u'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);localStorage.setItem('baby_cube_uid',uid);}return uid;}
-const UID=getUid();
+// ── 기기 고유 ID — 쿠키에 저장 (배포해도 유지) ──
+// ── 인증 토큰 관리 ──
+function getToken(){return localStorage.getItem('bc_token');}
+function setToken(t){localStorage.setItem('bc_token',t);}
+function clearToken(){localStorage.removeItem('bc_token');}
 
-// ── 로컬 캐시 (빠른 UI 업데이트용) ──
+// ── 로컬 캐시 ──
 let cache={babies:[],cubes:[],categories:[],history:[],settings:{theme_idx:0,active_baby_id:null}};
 let currentSort='cat',calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),selectedCalDate=null;
 let multiRowCount=1,selectedColor=CAT_COLORS[0],editingMemoId=null,catOpen={},histFilter='all',selectedAv='👶';
@@ -359,25 +411,82 @@ let multiRowCount=1,selectedColor=CAT_COLORS[0],editingMemoId=null,catOpen={},hi
 async function api(method,path,body){
   setSyncState('saving');
   try{
-    const opts={method,headers:{'Content-Type':'application/json'}};
+    const opts={method,headers:{'Content-Type':'application/json','Authorization':`Bearer ${getToken()}`}};
     if(body)opts.body=JSON.stringify(body);
-    const sep=path.includes('?')?'&':'?';
-    const res=await fetch(`${API_BASE}${path}${sep}uid=${UID}`,opts);
+    const res=await fetch(`${API_BASE}${path}`,opts);
+    if(res.status===401){clearToken();showLoginScreen();throw new Error('로그인이 필요해요');}
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||res.statusText);}
     const data=await res.json();
     setSyncState('saved');
     return data;
   }catch(e){
     setSyncState('error');
-    showToast('⚠️ 저장 실패: '+e.message);
+    if(!e.message.includes('Load failed')&&!e.message.includes('Failed to fetch')){
+      showToast('⚠️ '+e.message);
+    }
     throw e;
   }
 }
 function setSyncState(s){const d=document.getElementById('sync-dot');if(d){d.className='sync-dot '+s;if(s==='saved')setTimeout(()=>{if(d.classList.contains('saved'))d.className='sync-dot';},2000);}}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-// ── 데이터 로드 — /api/init 한 번으로 전체 로드 ──
+// ── 로그인 화면 제어 ──
+function showLoginScreen(){
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+function showLogin(){
+  document.getElementById('login-form').style.display='block';
+  document.getElementById('register-form').style.display='none';
+}
+function showRegister(){
+  document.getElementById('login-form').style.display='none';
+  document.getElementById('register-form').style.display='block';
+}
+async function doLogin(){
+  const email=document.getElementById('auth-email')?.value?.trim();
+  const password=document.getElementById('auth-password')?.value;
+  const errEl=document.getElementById('auth-error');
+  if(!email||!password){errEl.textContent='이메일과 비밀번호를 입력해주세요';errEl.style.display='block';return;}
+  const btn=document.getElementById('login-btn');btn.disabled=true;btn.textContent='로그인 중...';
+  try{
+    const res=await fetch(`${API_BASE}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'로그인 실패');
+    setToken(data.token);
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('loading-screen').style.display='flex';
+    await loadAll();
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
+  finally{btn.disabled=false;btn.textContent='로그인';}
+}
+async function doRegister(){
+  const email=document.getElementById('reg-email')?.value?.trim();
+  const password=document.getElementById('reg-password')?.value;
+  const password2=document.getElementById('reg-password2')?.value;
+  const errEl=document.getElementById('reg-error');
+  if(!email||!password){errEl.textContent='이메일과 비밀번호를 입력해주세요';errEl.style.display='block';return;}
+  if(password!==password2){errEl.textContent='비밀번호가 일치하지 않아요';errEl.style.display='block';return;}
+  if(password.length<6){errEl.textContent='비밀번호는 6자 이상이어야 해요';errEl.style.display='block';return;}
+  const btn=document.getElementById('register-btn');btn.disabled=true;btn.textContent='가입 중...';
+  try{
+    const res=await fetch(`${API_BASE}/api/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'회원가입 실패');
+    setToken(data.token);
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('loading-screen').style.display='flex';
+    await loadAll();
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
+  finally{btn.disabled=false;btn.textContent='회원가입';}
+}
+function doLogout(){clearToken();location.reload();}
+
+// ── 데이터 로드 ──
 async function loadAll(){
+  // 토큰 없으면 로그인 화면
+  if(!getToken()){showLoginScreen();return;}
   try{
     const data=await api('GET','/api/init');
     cache.babies=data.babies||[];
@@ -388,11 +497,12 @@ async function loadAll(){
     if(!cache.settings.active_baby_id&&cache.babies.length)
       cache.settings.active_baby_id=cache.babies[0].id;
     applyTheme(cache.settings.theme_idx||0);
-    document.getElementById('uid-display').textContent=UID;
     document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
     render();
   }catch(e){
+    if(e.message.includes('로그인')){showLoginScreen();return;}
     document.getElementById('loading-screen').innerHTML='<div style="text-align:center;padding:20px;color:#888"><div style="font-size:32px;margin-bottom:10px">⚠️</div><div style="font-size:14px;margin-bottom:8px">서버 연결 실패</div><div style="font-size:12px;color:#aaa">'+e.message+'</div><button onclick="loadAll()" style="margin-top:14px;padding:8px 20px;background:#D4537E;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">다시 시도</button></div>';
   }
 }
@@ -466,7 +576,7 @@ function renderHome(){
   let alerts='';
   if(expired.length)alerts+=`<div class="alert-box danger"><div class="alert-title"><i class="ti ti-alert-circle"></i>유통기한 초과 (${expired.length}개)</div><ul>${expired.map(c=>`<li onclick="goToCube('${c.id}')">${c.emoji} ${c.name} — ${formatDate(c.expire_date)}</li>`).join('')}</ul></div>`;
   if(expiring.length)alerts+=`<div class="alert-box warn"><div class="alert-title"><i class="ti ti-clock"></i>3일 이내 만료 (${expiring.length}개)</div><ul>${expiring.map(c=>`<li onclick="goToCube('${c.id}')">${c.emoji} ${c.name} — D-${getDaysLeft(c.expire_date)}</li>`).join('')}</ul></div>`;
-  if(dupIds.size){const names=[...new Set(cubes.filter(c=>dupIds.has(c.id)).map(c=>c.name))];alerts+=`<div class="alert-box warn"><div class="alert-title"><i class="ti ti-copy"></i>동명 큐브 있음</div><ul>${names.map(n=>`<li>${lookupFood(n).emoji} ${n}</li>`).join('')}</ul></div>`;}
+  if(dupIds.size){const names=[...new Set(cubes.filter(c=>dupIds.has(c.id)).map(c=>c.name))];alerts+=`<div class="alert-box warn"><div class="alert-title"><i class="ti ti-copy"></i>중복 큐브 있음</div><ul>${names.map(n=>`<li>${lookupFood(n).emoji} ${n}</li>`).join('')}</ul></div>`;}
   document.getElementById('expire-alerts').innerHTML=alerts;
 }
 function goToCube(id){const cube=cache.cubes.find(c=>c.id===id);if(!cube)return;switchTab('cubes','tab-cubes');const si=document.getElementById('search-input');if(si)si.value=cube.name;catOpen[cube.cat_id]=true;renderCubes();setTimeout(()=>{const el=document.getElementById('catbody-'+cube.cat_id);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},100);}
@@ -510,21 +620,37 @@ function renderCubeCard(cube,dupIds){
   const isDup=dupIds&&dupIds.has(cube.id);
   const ab=cube.allergy==='yes'?`<span class="allergy-badge allergy-yes">⚠️ 알러지</span>`:cube.allergy==='no'?`<span class="allergy-badge allergy-no">✓ 이상없음</span>`:'';
   const pp=cube.particle!==undefined?`<span class="meta-pill pill-particle">입자 ${PARTICLE_LABELS[cube.particle]||'1단계'}</span>`:'';
-  return`<div class="cube-card${isDup?' dup-flag':''}" id="cubecard-${cube.id}"><div class="cube-top"><div class="cube-name-wrap"><span style="font-size:18px">${cube.emoji}</span><span class="cube-name">${cube.name}</span>${ab}${isDup?`<span class="dup-badge"><i class="ti ti-copy" style="font-size:9px"></i> 동명</span>`:''}</div><div class="cube-right"><div class="qty-control"><button class="qty-btn" onclick="adjustQty('${cube.id}',-0.5)">−</button><span class="qty-val">${cube.qty}</span><button class="qty-btn" onclick="adjustQty('${cube.id}',0.5)">+</button></div><span class="qty-unit">개</span></div></div><div class="cube-meta"><span class="meta-pill ${pc}"><i class="ti ti-calendar" style="font-size:9px"></i>${pt}</span>${cube.made_date?`<span class="meta-pill pill-info">제조 ${formatDate(cube.made_date)}</span>`:''}${cube.weight?`<span class="meta-pill pill-info">${cube.weight}${cube.unit||'g'}/큐브</span>`:''}${pp}</div>${cube.note?`<div class="cube-note"><i class="ti ti-notes" style="font-size:10px"></i> ${cube.note}</div>`:''}<div class="cube-actions"><button class="cube-edit-btn" onclick="openEditModal('${cube.id}')"><i class="ti ti-edit" style="font-size:11px"></i> 수정</button><button class="cube-discard-btn" onclick="discardCube('${cube.id}')"><i class="ti ti-trash" style="font-size:11px"></i> 전량 폐기</button></div></div>`;
+  return`<div class="cube-card${isDup?' dup-flag':''}" id="cubecard-${cube.id}"><div class="cube-top"><div class="cube-name-wrap"><span style="font-size:18px">${cube.emoji}</span><span class="cube-name">${cube.name}</span>${ab}${isDup?`<span class="dup-badge"><i class="ti ti-copy" style="font-size:9px"></i> 중복</span>`:''}</div><div class="cube-right"><div style="font-size:18px;font-weight:700;color:var(--text)">${cube.qty}<span style="font-size:11px;font-weight:400;color:var(--text2)">개</span></div></div></div><div class="cube-meta"><span class="meta-pill ${pc}"><i class="ti ti-calendar" style="font-size:9px"></i>${pt}</span>${cube.made_date?`<span class="meta-pill pill-info">제조 ${formatDate(cube.made_date)}</span>`:''}${cube.weight?`<span class="meta-pill pill-info">${cube.weight}${cube.unit||'g'}/큐브</span>`:''}${pp}</div>${cube.note?`<div class="cube-note"><i class="ti ti-notes" style="font-size:10px"></i> ${cube.note}</div>`:''}<div class="cube-actions"><button class="btn-use" onclick="openUseModal('${cube.id}')">🍽 사용하기</button><button class="cube-edit-btn" onclick="openEditModal('${cube.id}')"><i class="ti ti-edit" style="font-size:11px"></i> 수정</button><button class="cube-discard-btn" onclick="discardCube('${cube.id}')"><i class="ti ti-trash" style="font-size:11px"></i> 전량 폐기</button></div></div>`;
 }
 function setSort(id){currentSort=id;renderCubes();}
 
-async function adjustQty(id,delta){
-  const cube=cache.cubes.find(c=>c.id===id);if(!cube)return;
-  const prev=cube.qty;cube.qty=Math.max(0,Math.round((cube.qty+delta)*10)/10);
-  if(cube.qty!==prev){
-    renderCubes();
-    const b=activeBaby();
-    const hid='h'+uid8();
-    const hist={id:hid,baby_id:cube.baby_id,cube_name:cube.name,emoji:cube.emoji,type:delta<0?'used':'added',amount:Math.abs(delta),memo:''};
-    await Promise.all([api('PATCH',`/api/cubes/${id}`,{qty:cube.qty}),api('POST','/api/history',hist)]);
+let _useId=null,_useAmt=1;
+function openUseModal(id){
+  _useId=id;_useAmt=1;
+  const cube=cache.cubes.find(c=>c.id===id);
+  document.getElementById('use-modal-title').textContent=`${cube?.emoji||''} ${cube?.name||''} 사용`;
+  document.getElementById('use-amt-val').textContent='1';
+  const m=document.getElementById('use-memo-input');if(m)m.value='';
+  document.getElementById('use-modal').classList.add('open');
+}
+function changeUseAmt(d){
+  _useAmt=Math.max(0.5,Math.round((_useAmt+d)*10)/10);
+  document.getElementById('use-amt-val').textContent=_useAmt;
+}
+async function confirmUse(){
+  const cube=cache.cubes.find(c=>c.id===_useId);if(!cube)return;
+  if(cube.qty<_useAmt){showToast('⚠️ 재고가 부족해요');return;}
+  cube.qty=Math.round((cube.qty-_useAmt)*10)/10;
+  const memo=document.getElementById('use-memo-input')?.value?.trim()||'';
+  const hid='h'+uid8();
+  const hist={id:hid,baby_id:cube.baby_id||null,cube_name:cube.name,emoji:cube.emoji,type:'used',amount:_useAmt,memo};
+  closeModal('use-modal');
+  renderCubes();
+  try{
+    await Promise.all([api('PATCH',`/api/cubes/${_useId}`,{qty:cube.qty}),api('POST','/api/history',hist)]);
     cache.history.unshift({...hist,created_at:Math.floor(Date.now()/1000)});
-  }
+    showToast(`✅ ${cube.name} ${_useAmt}개 사용됨`);
+  }catch(e){console.error(e);}
 }
 async function discardCube(id){
   const cube=cache.cubes.find(c=>c.id===id);if(!cube)return;
@@ -540,8 +666,10 @@ async function discardCube(id){
 // ── 기록 ──
 function setHistFilter(f){histFilter=f;const map={all:'f-all',used:'f-used',added:'f-added',discarded:'f-discarded'};['all','used','added','discarded'].forEach(k=>{const el=document.getElementById('hf-'+k);if(!el)return;el.className='hist-filter';if(k===f)el.classList.add(map[k]);});renderHistory();}
 function renderHistory(){
-  const b=activeBaby();let items=[...cache.history].filter(h=>!b||!h.baby_id||h.baby_id===b.id).sort((a,c)=>c.created_at-a.created_at);
-  if(histFilter!=='all')items=items.filter(h=>h.type===histFilter);items=items.slice(0,100);
+  const b=activeBaby();
+  let items=[...cache.history].filter(h=>!b||!h.baby_id||h.baby_id===b.id).sort((a,c)=>c.created_at-a.created_at);
+  if(histFilter!=='all')items=items.filter(h=>h.type===histFilter);
+  items=items.slice(0,100);
   document.getElementById('history-list').innerHTML=items.length?items.map(h=>`<div class="history-item" onclick="openMemoModal('${h.id}')"><div class="history-icon ${h.type||'added'}"><i class="ti ti-${h.type==='used'?'minus':h.type==='discarded'?'trash':'plus'}"></i></div><div class="history-info"><div class="history-name">${h.emoji||'🍱'} ${h.cube_name||h.name||''}</div><div class="history-time">${formatDateTime(h.created_at)}</div>${h.memo?`<span class="history-memo"><i class="ti ti-notes" style="font-size:10px"></i> ${h.memo}</span>`:`<div class="memo-hint"><i class="ti ti-pencil" style="font-size:9px"></i>메모 추가</div>`}</div><div class="history-amount ${h.type||'added'}">${h.type==='used'?'-':h.type==='discarded'?'🗑':'+'}${h.amount}개</div></div>`).join(''):`<div class="empty-state"><i class="ti ti-history"></i><p>기록이 없어요</p></div>`;
 }
 function openMemoModal(hid){editingMemoId=hid;const h=cache.history.find(x=>x.id===hid);if(!h)return;document.getElementById('memo-modal-title').textContent=`${h.emoji||'🍱'} ${h.cube_name||h.name||''} — 메모`;document.getElementById('memo-input').value=h.memo||'';document.getElementById('memo-modal').classList.add('open');}
@@ -558,7 +686,7 @@ function onIcEmojiInput(){const el=document.getElementById('ic-emoji');const pre
 async function saveInlineCat(){const name=document.getElementById('ic-name')?.value?.trim();if(!name)return alert('이름을 입력해주세요');const emojiInput=document.getElementById('ic-emoji')?.value?.trim();const emoji=emojiInput||getCatEmoji(name);const color=CAT_COLORS[Math.floor(Math.random()*CAT_COLORS.length)];const id=uid8();const cat={id,name,emoji,color,is_default:0};await api('POST','/api/categories',cat);cache.categories.push(cat);renderCatManage();const sel=document.getElementById('f-cat');if(sel){const opt=document.createElement('option');opt.value=id;opt.textContent=`${emoji} ${name}`;opt.selected=true;sel.insertBefore(opt,sel.lastElementChild);sel.value=id;sel.dataset.prev=id;}document.getElementById('inline-cat-form').classList.remove('open');}
 function buildSingleForm(cube){
   const today=new Date().toISOString().split('T')[0];const id=cube?cube.id:'';const al=cube?cube.allergy:'unknown';const pt=cube?(cube.particle||0):0;
-  return`<div class="form-group"><label class="form-label">큐브 이름</label><input type="text" class="form-input" id="f-name" placeholder="예: 당근, 양배추, 오이..." value="${cube?.name||''}" oninput="onNameInput()"></div><div class="emoji-preview" id="emoji-preview">${cube?.emoji||'🍱'}</div><div class="form-group"><label class="form-label">카테고리</label><select class="form-select" id="f-cat" onchange="onCatChange(this)" data-prev="${cube?.cat_id||cache.categories[0]?.id||''}">${buildCatOptions(cube?.cat_id||cache.categories[0]?.id||'')}</select><div class="inline-cat-form" id="inline-cat-form"><div style="font-size:12px;font-weight:600;margin-bottom:7px;color:var(--text2)">새 카테고리</div><div class="form-group" style="margin-bottom:8px"><label class="form-label">이름</label><input type="text" class="form-input" id="ic-name" placeholder="예: 간식" oninput="onIcNameInput()"></div><div class="form-group" style="margin-bottom:8px"><label class="form-label">이모티콘</label><div class="ic-emoji-row"><span class="ic-emoji-preview" id="ic-emoji-preview">📦</span><input type="text" class="form-input" id="ic-emoji" placeholder="직접 입력 (선택)" maxlength="2" oninput="onIcEmojiInput()" style="flex:1"></div><div style="font-size:10px;color:var(--text2);margin-top:3px">이름을 입력하면 자동으로 설정돼요</div></div><button type="button" onclick="saveInlineCat()" style="padding:6px 14px;background:var(--ac);color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer">추가</button><button type="button" onclick="document.getElementById('inline-cat-form').classList.remove('open')" style="margin-left:6px;padding:6px 14px;background:none;border:1px solid var(--border);border-radius:7px;font-size:13px;cursor:pointer;color:var(--text)">취소</button></div></div><div class="form-row"><div class="form-group"><label class="form-label">수량 (개)</label><input type="number" class="form-input" id="f-qty" min="0" step="0.5" value="${cube?.qty||1}"></div><div class="form-group"><label class="form-label">용량</label><div style="display:flex;gap:5px"><input type="number" class="form-input" id="f-weight" placeholder="15" value="${cube?.weight||''}" style="flex:1"><select class="form-select" id="f-unit" style="width:65px"><option value="g"${cube?.unit==='g'?' selected':''}>g</option><option value="ml"${cube?.unit==='ml'?' selected':''}>ml</option></select></div></div></div><div class="form-group"><label class="form-label">입자 크기</label><div class="particle-toggle"><div class="particle-opt${pt===0?' sel-p':''}" onclick="selParticle(0,this)"><div>1단계</div><div style="font-size:10px;margin-top:2px">고운 입자</div></div><div class="particle-opt${pt===1?' sel-p':''}" onclick="selParticle(1,this)"><div>2단계</div><div style="font-size:10px;margin-top:2px">2–3mm</div></div><div class="particle-opt${pt===2?' sel-p':''}" onclick="selParticle(2,this)"><div>3단계</div><div style="font-size:10px;margin-top:2px">4–5mm</div></div></div></div><div class="form-group"><label class="form-label">제조일</label><input type="date" class="form-input" id="f-made" value="${cube?.made_date||today}"></div><div class="form-group" style="margin-bottom:5px"><label class="form-label">사용기한</label><input type="date" class="form-input" id="f-expire" value="${cube?.expire_date||''}"></div><div class="form-group"><div class="expire-options"><div class="expire-opt" onclick="quickExpire(7,this)">+1주</div><div class="expire-opt" onclick="quickExpire(14,this)">+2주</div><div class="expire-opt" onclick="quickExpire(21,this)">+3주</div><div class="expire-opt" onclick="quickExpire(30,this)">+1달</div><div class="expire-opt" onclick="quickExpire(90,this)">+3달</div></div></div><div class="form-group"><label class="form-label">알러지 반응</label><div class="allergy-toggle"><div class="allergy-opt${al==='no'?' sel-no':''}" id="al-no" onclick="setAllergy('no')">✓ 이상없음</div><div class="allergy-opt${al==='yes'?' sel-yes':''}" id="al-yes" onclick="setAllergy('yes')">⚠️ 알러지</div><div class="allergy-opt${al==='unknown'?' sel-uk':''}" id="al-uk" onclick="setAllergy('unknown')">미확인</div></div></div><div class="form-group"><label class="form-label">메모</label><textarea class="form-input" id="f-note" rows="2" placeholder="예: 첫 도입, 두드러기 없음...">${cube?.note||''}</textarea></div><button class="btn-primary" onclick="saveCube('${id}')">저장</button><button class="btn-secondary" onclick="closeModal('add-modal')">취소</button>${cube?`<button class="btn-danger" onclick="deleteCube('${cube.id}')">삭제</button>`:''}`;
+  return`<div class="form-group"><label class="form-label">큐브 이름</label><input type="text" class="form-input" id="f-name" placeholder="예: 당근, 양배추, 오이..." value="${cube?.name||''}" oninput="onNameInput()"></div><div class="emoji-preview" id="emoji-preview">${cube?.emoji||'🍱'}</div><div class="form-group"><label class="form-label">카테고리</label><select class="form-select" id="f-cat" onchange="onCatChange(this)" data-prev="${cube?.cat_id||cache.categories[0]?.id||''}">${buildCatOptions(cube?.cat_id||cache.categories[0]?.id||'')}</select><div class="inline-cat-form" id="inline-cat-form"><div style="font-size:12px;font-weight:600;margin-bottom:7px;color:var(--text2)">새 카테고리</div><div class="form-group" style="margin-bottom:8px"><label class="form-label">이름</label><input type="text" class="form-input" id="ic-name" placeholder="예: 간식" oninput="onIcNameInput()"></div><div class="form-group" style="margin-bottom:8px"><label class="form-label">이모티콘</label><div class="ic-emoji-row"><span class="ic-emoji-preview" id="ic-emoji-preview">📦</span><input type="text" class="form-input" id="ic-emoji" placeholder="직접 입력 (선택)" maxlength="2" oninput="onIcEmojiInput()" style="flex:1"></div><div style="font-size:10px;color:var(--text2);margin-top:3px">이름을 입력하면 자동으로 설정돼요</div></div><button type="button" onclick="saveInlineCat()" style="padding:6px 14px;background:var(--ac);color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer">추가</button><button type="button" onclick="document.getElementById('inline-cat-form').classList.remove('open')" style="margin-left:6px;padding:6px 14px;background:none;border:1px solid var(--border);border-radius:7px;font-size:13px;cursor:pointer;color:var(--text)">취소</button></div></div><div class="form-row"><div class="form-group"><label class="form-label">수량 (개)</label><input type="number" class="form-input" id="f-qty" min="0" step="0.5" value="${cube?.qty||1}"></div><div class="form-group"><label class="form-label">용량</label><div style="display:flex;gap:5px"><input type="number" class="form-input" id="f-weight" placeholder="15" value="${cube?.weight||''}" style="flex:1"><select class="form-select" id="f-unit" style="width:65px"><option value="g"${cube?.unit==='g'?' selected':''}>g</option><option value="ml"${cube?.unit==='ml'?' selected':''}>ml</option></select></div></div></div><div class="form-group"><label class="form-label">입자 크기</label><div class="particle-toggle"><div class="particle-opt${pt===0?' sel-p':''}" onclick="selParticle(0,this)"><div>1단계</div><div style="font-size:10px;margin-top:2px">고운 입자</div></div><div class="particle-opt${pt===1?' sel-p':''}" onclick="selParticle(1,this)"><div>2단계</div><div style="font-size:10px;margin-top:2px">2–3mm</div></div><div class="particle-opt${pt===2?' sel-p':''}" onclick="selParticle(2,this)"><div>3단계</div><div style="font-size:10px;margin-top:2px">4–5mm</div></div></div></div><div class="form-group"><label class="form-label">제조일</label><input type="date" class="form-input" id="f-made" value="${cube?.made_date||today}" style="max-width:160px"></div><div class="form-group" style="margin-bottom:5px"><label class="form-label">사용기한</label><input type="date" class="form-input" id="f-expire" value="${cube?.expire_date||''}" style="max-width:160px"></div><div class="form-group"><div class="expire-options"><div class="expire-opt" onclick="quickExpire(7,this)">+1주</div><div class="expire-opt" onclick="quickExpire(14,this)">+2주</div><div class="expire-opt" onclick="quickExpire(21,this)">+3주</div><div class="expire-opt" onclick="quickExpire(30,this)">+1달</div><div class="expire-opt" onclick="quickExpire(90,this)">+3달</div></div></div><div class="form-group"><label class="form-label">알러지 반응</label><div class="allergy-toggle"><div class="allergy-opt${al==='no'?' sel-no':''}" id="al-no" onclick="setAllergy('no')">✓ 이상없음</div><div class="allergy-opt${al==='yes'?' sel-yes':''}" id="al-yes" onclick="setAllergy('yes')">⚠️ 알러지</div><div class="allergy-opt${al==='unknown'?' sel-uk':''}" id="al-uk" onclick="setAllergy('unknown')">미확인</div></div></div><div class="form-group"><label class="form-label">메모</label><textarea class="form-input" id="f-note" rows="2" placeholder="예: 첫 도입, 두드러기 없음...">${cube?.note||''}</textarea></div><button class="btn-primary" onclick="saveCube('${id}')">저장</button><button class="btn-secondary" onclick="closeModal('add-modal')">취소</button>${cube?`<button class="btn-danger" onclick="deleteCube('${cube.id}')">삭제</button>`:''}`;
 }
 function selParticle(val,el){document.querySelectorAll('.particle-opt').forEach(e=>e.classList.remove('sel-p'));el.classList.add('sel-p');}
 function setAllergy(val){['no','yes','uk'].forEach(k=>{const el=document.getElementById('al-'+k);if(!el)return;el.className='allergy-opt';if(k==='no'&&val==='no')el.classList.add('sel-no');if(k==='yes'&&val==='yes')el.classList.add('sel-yes');if(k==='uk'&&val==='unknown')el.classList.add('sel-uk');});}
@@ -608,17 +736,26 @@ function buildMultiForm(){
         <button type="button" onclick="document.getElementById('m-inline-cat-form').classList.remove('open')" style="padding:6px 14px;background:none;border:1px solid var(--border);border-radius:7px;font-size:13px;cursor:pointer;color:var(--text)">취소</button>
       </div>
     </div>
+    <div class="form-group" style="margin-bottom:9px">
+      <label class="form-label">공통 중량 단위</label>
+      <div style="display:flex;gap:6px">
+        <div id="m-unit-g" onclick="setMUnit('g')" style="flex:1;padding:8px;border-radius:7px;font-size:13px;border:1px solid var(--ac);background:var(--ac-light);color:var(--ac);cursor:pointer;text-align:center;font-weight:600">g</div>
+        <div id="m-unit-ml" onclick="setMUnit('ml')" style="flex:1;padding:8px;border-radius:7px;font-size:13px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;text-align:center">ml</div>
+      </div>
+    </div>
     <div class="section-title" style="margin-top:2px">큐브 목록 <span style="font-weight:400;font-size:10px;text-transform:none">(이름 입력 시 카테고리 자동 설정)</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 52px;gap:4px;margin-bottom:5px;padding:0 2px">
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 44px 44px;gap:4px;margin-bottom:5px;padding:0 2px">
       <div style="font-size:10px;color:var(--text2)">이름</div>
       <div style="font-size:10px;color:var(--text2)">카테고리</div>
       <div style="font-size:10px;color:var(--text2);text-align:center">개수</div>
+      <div style="font-size:10px;color:var(--text2);text-align:center">중량</div>
     </div>
     <div id="multi-rows">
-      <div class="multi-add-row" data-idx="0" style="display:grid;grid-template-columns:1fr 1fr 52px;gap:4px;margin-bottom:6px">
-        <input type="text" class="form-input" placeholder="예: 당근" id="mr-name-0" style="padding:7px 9px" oninput="onMrNameInput(0)">
-        <select class="form-select" id="mr-cat-0" style="padding:7px 6px;font-size:12px" onchange="onMrCatChange(0,this)">${buildMultiCatOptions(defCat)}</select>
-        <input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-0" style="padding:7px 6px;text-align:center">
+      <div class="multi-add-row" data-idx="0" style="display:grid;grid-template-columns:1.2fr 1fr 44px 44px;gap:4px;margin-bottom:6px">
+        <input type="text" class="form-input" placeholder="예: 당근" id="mr-name-0" style="padding:7px 6px" oninput="onMrNameInput(0)">
+        <select class="form-select" id="mr-cat-0" style="padding:7px 4px;font-size:11px" onchange="onMrCatChange(0,this)">${buildMultiCatOptions(defCat)}</select>
+        <input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-0" style="padding:7px 4px;text-align:center">
+        <input type="number" class="form-input" placeholder="g" min="0" id="mr-weight-0" style="padding:7px 4px;text-align:center">
       </div>
     </div>
     <button class="add-row-btn" id="add-row-btn" onclick="addMultiRow()"><i class="ti ti-plus"></i> 항목 추가</button>
@@ -673,27 +810,35 @@ async function saveMInlineCat(){
   showToast(`✅ "${name}" 카테고리 추가됨`);
 }
 function qEM(days,el){document.querySelectorAll('#add-modal .expire-opt').forEach(e=>e.classList.remove('selected'));el.classList.add('selected');const made=document.getElementById('m-made')?.value;const base=made?new Date(made):new Date();base.setDate(base.getDate()+days);const inp=document.getElementById('m-expire');if(inp)inp.value=base.toISOString().split('T')[0];}
+function setMUnit(u){
+  const g=document.getElementById('m-unit-g');const ml=document.getElementById('m-unit-ml');
+  if(!g||!ml)return;
+  if(u==='g'){g.style.cssText='flex:1;padding:8px;border-radius:7px;font-size:13px;border:1px solid var(--ac);background:var(--ac-light);color:var(--ac);cursor:pointer;text-align:center;font-weight:600';ml.style.cssText='flex:1;padding:8px;border-radius:7px;font-size:13px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;text-align:center';}
+  else{ml.style.cssText='flex:1;padding:8px;border-radius:7px;font-size:13px;border:1px solid var(--ac);background:var(--ac-light);color:var(--ac);cursor:pointer;text-align:center;font-weight:600';g.style.cssText='flex:1;padding:8px;border-radius:7px;font-size:13px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;text-align:center';}
+}
 function addMultiRow(){
   const idx=multiRowCount++;const defCat=cache.categories[0]?.id||'';
   const div=document.createElement('div');div.className='multi-add-row';div.dataset.idx=idx;
-  div.style.cssText='display:grid;grid-template-columns:1fr 1fr 52px;gap:4px;margin-bottom:6px';
-  div.innerHTML=`<input type="text" class="form-input" placeholder="예: 브로콜리" id="mr-name-${idx}" style="padding:7px 9px" oninput="onMrNameInput(${idx})">
-    <select class="form-select" id="mr-cat-${idx}" style="padding:7px 6px;font-size:12px" onchange="onMrCatChange(${idx},this)">${buildMultiCatOptions(defCat)}</select>
-    <input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-${idx}" style="padding:7px 6px;text-align:center">`;
+  div.style.cssText='display:grid;grid-template-columns:1.2fr 1fr 44px 44px;gap:4px;margin-bottom:6px';
+  div.innerHTML=`<input type="text" class="form-input" placeholder="예: 브로콜리" id="mr-name-${idx}" style="padding:7px 6px" oninput="onMrNameInput(${idx})">
+    <select class="form-select" id="mr-cat-${idx}" style="padding:7px 4px;font-size:11px" onchange="onMrCatChange(${idx},this)">${buildMultiCatOptions(defCat)}</select>
+    <input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-${idx}" style="padding:7px 4px;text-align:center">
+    <input type="number" class="form-input" placeholder="g" min="0" id="mr-weight-${idx}" style="padding:7px 4px;text-align:center">`;
   document.getElementById('add-row-btn').before(div);
 }
 async function saveMultiCubes(){
   const madeDate=document.getElementById('m-made')?.value;const expireDate=document.getElementById('m-expire')?.value;
+  const unit=document.getElementById('m-unit-ml')?.style.fontWeight==='600'?'ml':'g';
   const b=activeBaby();let added=0;const saves=[];
   document.querySelectorAll('.multi-add-row').forEach(row=>{
     const idx=row.dataset.idx;
     const name=document.getElementById(`mr-name-${idx}`)?.value?.trim();if(!name)return;
     const qty=parseFloat(document.getElementById(`mr-qty-${idx}`)?.value||1);
+    const weight=document.getElementById(`mr-weight-${idx}`)?.value||'';
     const{emoji,cat}=lookupFood(name);
-    // 행의 카테고리 select 값 우선, 없으면 자동 감지
     const rowCat=document.getElementById(`mr-cat-${idx}`)?.value;
     const finalCat=(rowCat&&rowCat!=='__new__')?rowCat:(cat||cache.categories[0]?.id||'');
-    const cube={id:uid8(),name,emoji,cat_id:finalCat,qty,weight:'',unit:'g',made_date:madeDate||null,expire_date:expireDate||null,allergy:'unknown',particle:0,note:'',baby_id:b?b.id:null};
+    const cube={id:uid8(),name,emoji,cat_id:finalCat,qty,weight,unit,made_date:madeDate||null,expire_date:expireDate||null,allergy:'unknown',particle:0,note:'',baby_id:b?b.id:null};
     cache.cubes.push(cube);saves.push(api('POST','/api/cubes',cube));
     const hid='h'+uid8();saves.push(api('POST','/api/history',{id:hid,baby_id:cube.baby_id,cube_name:name,emoji,type:'added',amount:qty,memo:''}));
     cache.history.unshift({id:hid,baby_id:cube.baby_id,cube_name:name,emoji,type:'added',amount:qty,memo:'',created_at:Math.floor(Date.now()/1000)});added++;
@@ -710,7 +855,13 @@ async function saveCategory(){const name=document.getElementById('new-cat-name')
 async function deleteCategoryById(id){if(!confirm('카테고리를 삭제하시겠어요?'))return;await api('DELETE',`/api/categories/${id}`);cache.categories=cache.categories.filter(c=>c.id!==id);render();}
 
 // ── 설정 ──
-function openSettings(){const tg=document.getElementById('theme-grid');if(tg)tg.innerHTML=THEMES.map((t,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="theme-swatch${i===(cache.settings.theme_idx||0)?' active':''}" style="background:${t.ac}" onclick="setTheme(${i})"></div><div style="font-size:10px;color:var(--text2)">${t.name}</div></div>`).join('');document.getElementById('settings-modal').classList.add('open');}
+function openSettings(){
+  const tg=document.getElementById('theme-grid');
+  if(tg)tg.innerHTML=THEMES.map((t,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="theme-swatch${i===(cache.settings.theme_idx||0)?' active':''}" style="background:${t.ac}" onclick="setTheme(${i})"></div><div style="font-size:10px;color:var(--text2)">${t.name}</div></div>`).join('');
+  // 이메일 표시
+  try{const p=JSON.parse(atob(getToken().split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));const el=document.getElementById('user-email-display');if(el)el.textContent=p.email||'로그인됨';}catch(e){}
+  document.getElementById('settings-modal').classList.add('open');
+}
 async function setTheme(idx){cache.settings.theme_idx=idx;applyTheme(idx);await api('POST','/api/settings',cache.settings);const tg=document.getElementById('theme-grid');if(tg)tg.innerHTML=THEMES.map((t,i)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="theme-swatch${i===idx?' active':''}" style="background:${t.ac}" onclick="setTheme(${i})"></div><div style="font-size:10px;color:var(--text2)">${t.name}</div></div>`).join('');}
 async function clearAll(){await Promise.all([...cache.cubes.map(c=>api('DELETE',`/api/cubes/${c.id}`)),...cache.categories.filter(c=>!c.is_default).map(c=>api('DELETE',`/api/categories/${c.id}`)),...cache.babies.map(b=>api('DELETE',`/api/babies/${b.id}`))]);location.reload();}
 function openBabyModal(){
