@@ -197,6 +197,21 @@ export default {
       if (!payload) return err('인증이 만료됐어요. 다시 로그인해주세요', 401);
       const userId = payload.sub;
 
+      // ── 비밀번호 변경 ──
+      if (path === '/api/auth/change-password' && method === 'POST') {
+        const { currentPassword, newPassword } = await request.json();
+        if (!currentPassword || !newPassword) return err('비밀번호를 입력해주세요');
+        if (newPassword.length < 6) return err('새 비밀번호는 6자 이상이어야 해요');
+        const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first();
+        if (!user) return err('사용자를 찾을 수 없어요');
+        const currentHash = await hashPassword(currentPassword, user.salt);
+        if (currentHash !== user.password_hash) return err('현재 비밀번호가 틀렸어요');
+        const newSalt = randomSalt();
+        const newHash = await hashPassword(newPassword, newSalt);
+        await env.DB.prepare('UPDATE users SET password_hash=?, salt=? WHERE id=?').bind(newHash, newSalt, userId).run();
+        return json({ ok: true });
+      }
+
       // ── init ──
       if (path === '/api/init' && method === 'GET') {
         await ensureDefaultCategories(env.DB, userId);
