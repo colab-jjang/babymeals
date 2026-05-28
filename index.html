@@ -248,6 +248,7 @@ input[type="date"].form-input{width:100%;max-width:100%;box-sizing:border-box}
       <div id="auth-error" style="font-size:13px;color:#D85A30;margin-bottom:8px;display:none"></div>
       <button class="btn-primary" id="login-btn" onclick="doLogin()">로그인</button>
       <button class="btn-secondary" onclick="showRegister()" style="margin-top:8px">처음이에요 — 회원가입</button>
+      <button style="background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;margin-top:8px;width:100%;text-align:center" onclick="showForgot()">비밀번호를 잊으셨나요?</button>
     </div>
     <div id="register-form" style="display:none">
       <div class="form-group"><label class="form-label">이메일</label><input type="email" class="form-input" id="reg-email" placeholder="example@email.com" autocomplete="email"></div>
@@ -256,6 +257,20 @@ input[type="date"].form-input{width:100%;max-width:100%;box-sizing:border-box}
       <div id="reg-error" style="font-size:13px;color:#D85A30;margin-bottom:8px;display:none"></div>
       <button class="btn-primary" id="register-btn" onclick="doRegister()">회원가입</button>
       <button class="btn-secondary" onclick="showLogin()" style="margin-top:8px">이미 계정이 있어요 — 로그인</button>
+    </div>
+    <div id="forgot-form" style="display:none">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px;text-align:center">가입한 이메일로 재설정 링크를 보내드려요</div>
+      <div class="form-group"><label class="form-label">이메일</label><input type="email" class="form-input" id="forgot-email" placeholder="example@email.com"></div>
+      <div id="forgot-msg" style="font-size:13px;margin-bottom:8px;display:none"></div>
+      <button class="btn-primary" id="forgot-btn" onclick="doForgot()">재설정 링크 받기</button>
+      <button class="btn-secondary" onclick="showLogin()" style="margin-top:8px">로그인으로 돌아가기</button>
+    </div>
+    <div id="reset-form" style="display:none">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:14px;text-align:center">새 비밀번호를 입력해주세요</div>
+      <div class="form-group"><label class="form-label">새 비밀번호</label><input type="password" class="form-input" id="reset-password" placeholder="6자 이상"></div>
+      <div class="form-group"><label class="form-label">비밀번호 확인</label><input type="password" class="form-input" id="reset-password2" placeholder="새 비밀번호 재입력"></div>
+      <div id="reset-error" style="font-size:13px;color:#D85A30;margin-bottom:8px;display:none"></div>
+      <button class="btn-primary" id="reset-btn" onclick="doReset()">비밀번호 변경</button>
     </div>
   </div>
 </div>
@@ -453,14 +468,64 @@ function showLoginScreen(){
   document.getElementById('loading-screen').style.display='none';
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app').style.display='none';
+  // URL에 reset 토큰 있으면 재설정 화면 바로 표시
+  const resetToken=new URLSearchParams(window.location.search).get('reset');
+  if(resetToken){
+    document.getElementById('login-form').style.display='none';
+    document.getElementById('reset-form').style.display='block';
+  }
 }
 function showLogin(){
   document.getElementById('login-form').style.display='block';
   document.getElementById('register-form').style.display='none';
+  document.getElementById('forgot-form').style.display='none';
+  document.getElementById('reset-form').style.display='none';
 }
 function showRegister(){
   document.getElementById('login-form').style.display='none';
   document.getElementById('register-form').style.display='block';
+  document.getElementById('forgot-form').style.display='none';
+  document.getElementById('reset-form').style.display='none';
+}
+function showForgot(){
+  document.getElementById('login-form').style.display='none';
+  document.getElementById('register-form').style.display='none';
+  document.getElementById('forgot-form').style.display='block';
+  document.getElementById('reset-form').style.display='none';
+}
+async function doForgot(){
+  const email=document.getElementById('forgot-email')?.value?.trim();
+  const msgEl=document.getElementById('forgot-msg');
+  if(!email){msgEl.textContent='이메일을 입력해주세요';msgEl.style.color='#D85A30';msgEl.style.display='block';return;}
+  const btn=document.getElementById('forgot-btn');btn.disabled=true;btn.textContent='전송 중...';
+  try{
+    await fetch(`${API_BASE}/api/auth/forgot-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    msgEl.textContent='✅ 재설정 링크를 이메일로 보내드렸어요! (spam 폴더도 확인해주세요)';
+    msgEl.style.color='#3B6D11';msgEl.style.display='block';
+  }catch(e){
+    msgEl.textContent='전송 실패. 다시 시도해주세요';msgEl.style.color='#D85A30';msgEl.style.display='block';
+  }finally{btn.disabled=false;btn.textContent='재설정 링크 받기';}
+}
+async function doReset(){
+  const password=document.getElementById('reset-password')?.value;
+  const password2=document.getElementById('reset-password2')?.value;
+  const errEl=document.getElementById('reset-error');
+  const resetToken=new URLSearchParams(window.location.search).get('reset');
+  if(!password){errEl.textContent='비밀번호를 입력해주세요';errEl.style.display='block';return;}
+  if(password!==password2){errEl.textContent='비밀번호가 일치하지 않아요';errEl.style.display='block';return;}
+  if(password.length<6){errEl.textContent='비밀번호는 6자 이상이어야 해요';errEl.style.display='block';return;}
+  const btn=document.getElementById('reset-btn');btn.disabled=true;btn.textContent='변경 중...';
+  try{
+    const res=await fetch(`${API_BASE}/api/auth/reset-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:resetToken,newPassword:password})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'실패');
+    // URL에서 reset 파라미터 제거
+    window.history.replaceState({},'','/');
+    showLogin();
+    setTimeout(()=>{document.getElementById('auth-error').style.display='none';},100);
+    alert('✅ 비밀번호가 변경됐어요! 새 비밀번호로 로그인해주세요.');
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
+  finally{btn.disabled=false;btn.textContent='비밀번호 변경';}
 }
 async function doLogin(){
   const email=document.getElementById('auth-email')?.value?.trim();
