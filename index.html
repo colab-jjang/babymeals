@@ -389,7 +389,16 @@ input[type="date"].form-input{width:100%;max-width:100%;box-sizing:border-box}
   </div>
 </div>
 <div class="modal-overlay" id="category-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">카테고리 추가</div><div class="form-group"><label class="form-label">이름</label><input type="text" class="form-input" id="new-cat-name" placeholder="예: 단백질, 해산물..."></div><div class="form-group"><label class="form-label">색상</label><div class="color-row" id="color-picker"></div></div><div class="form-group"><label class="form-label">이모티콘</label><input type="text" class="form-input" id="new-cat-emoji" placeholder="🥕" maxlength="2"></div><button class="btn-primary" onclick="saveCategory()">저장</button><button class="btn-secondary" onclick="closeModal('category-modal')">취소</button></div></div>
-<div class="modal-overlay" id="settings-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">설정</div><div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:8px">🔒 <span id="user-email-display">로그인됨</span></div><div class="form-group"><label class="form-label">테마 색상</label><div class="theme-grid" id="theme-grid"></div></div><button class="btn-secondary" onclick="closeModal('settings-modal');setTimeout(openBabyModal,150)" style="margin-top:4px">👶 아기 관리</button><button class="btn-danger" onclick="if(confirm('모든 데이터를 삭제하시겠어요?')){clearAll()}" style="margin-top:7px">데이터 초기화</button><button class="btn-secondary" onclick="if(confirm('로그아웃 할까요?')){doLogout()}" style="margin-top:7px;color:#D85A30">로그아웃</button><button class="btn-secondary" onclick="closeModal('settings-modal')" style="margin-top:7px">닫기</button></div></div>
+<div class="modal-overlay" id="settings-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">설정</div><div style="font-size:12px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:8px">🔒 <span id="user-email-display">로그인됨</span></div><div class="form-group"><label class="form-label">테마 색상</label><div class="theme-grid" id="theme-grid"></div></div><button class="btn-secondary" onclick="closeModal('settings-modal');setTimeout(openBabyModal,150)" style="margin-top:4px">👶 아기 관리</button><button class="btn-secondary" onclick="closeModal('settings-modal');openChangePwModal()" style="margin-top:7px">🔑 비밀번호 변경</button><button class="btn-danger" onclick="if(confirm('모든 데이터를 삭제하시겠어요?')){clearAll()}" style="margin-top:7px">데이터 초기화</button><button class="btn-secondary" onclick="if(confirm('로그아웃 할까요?')){doLogout()}" style="margin-top:7px;color:#D85A30">로그아웃</button><button class="btn-secondary" onclick="closeModal('settings-modal')" style="margin-top:7px">닫기</button></div></div>
+
+<div class="modal-overlay" id="changepw-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title">비밀번호 변경</div>
+  <div class="form-group"><label class="form-label">현재 비밀번호</label><input type="password" class="form-input" id="cp-current" placeholder="현재 비밀번호"></div>
+  <div class="form-group"><label class="form-label">새 비밀번호</label><input type="password" class="form-input" id="cp-new" placeholder="6자 이상"></div>
+  <div class="form-group"><label class="form-label">새 비밀번호 확인</label><input type="password" class="form-input" id="cp-new2" placeholder="새 비밀번호 재입력"></div>
+  <div id="cp-error" style="font-size:13px;color:#D85A30;margin-bottom:8px;display:none"></div>
+  <button class="btn-primary" id="cp-btn" onclick="doChangePw()">변경하기</button>
+  <button class="btn-secondary" onclick="closeModal('changepw-modal')">취소</button>
+</div></div>
 
 <script>
 // ════════════════════════════════════════
@@ -491,6 +500,32 @@ async function doRegister(){
   finally{btn.disabled=false;btn.textContent='회원가입';}
 }
 function doLogout(){clearToken();location.reload();}
+function openChangePwModal(){
+  document.getElementById('cp-current').value='';
+  document.getElementById('cp-new').value='';
+  document.getElementById('cp-new2').value='';
+  const e=document.getElementById('cp-error');if(e){e.style.display='none';e.textContent='';}
+  document.getElementById('changepw-modal').classList.add('open');
+}
+async function doChangePw(){
+  const cur=document.getElementById('cp-current')?.value;
+  const nw=document.getElementById('cp-new')?.value;
+  const nw2=document.getElementById('cp-new2')?.value;
+  const errEl=document.getElementById('cp-error');
+  if(!cur||!nw){errEl.textContent='모든 칸을 입력해주세요';errEl.style.display='block';return;}
+  if(nw!==nw2){errEl.textContent='새 비밀번호가 일치하지 않아요';errEl.style.display='block';return;}
+  if(nw.length<6){errEl.textContent='새 비밀번호는 6자 이상이어야 해요';errEl.style.display='block';return;}
+  const btn=document.getElementById('cp-btn');btn.disabled=true;btn.textContent='변경 중...';
+  try{
+    await api('POST','/api/auth/change-password',{currentPassword:cur,newPassword:nw});
+    closeModal('changepw-modal');
+    showToast('✅ 비밀번호가 변경됐어요');
+  }catch(e){
+    errEl.textContent=e.message;errEl.style.display='block';
+  }finally{
+    btn.disabled=false;btn.textContent='변경하기';
+  }
+}
 
 // ── 데이터 로드 ──
 async function loadAll(){
