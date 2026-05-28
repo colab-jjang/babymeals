@@ -1,17 +1,20 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "babymeals",
+  "name": "baby-cube-api",
   "main": "src/worker.js",
   "compatibility_date": "2026-05-27",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true
   },
-   "d1_databases": [
+  "d1_databases": [
     {
       "binding": "DB",
       "database_name": "baby-cube-db",
       "database_id": "e254fc24-8eaf-478a-9d37-e255b55bef5d"
     }
-  ]
+  ],
+  "vars": {
+    "RESEND_FROM_EMAIL": "onboarding@resend.dev"
+  }
 }
