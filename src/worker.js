@@ -177,6 +177,49 @@ export default {
         return json({ ok: true, token, userId });
       }
 
+      // ── 비밀번호 찾기 (재설정 링크 발송) ──
+      if (path === '/api/auth/forgot-password' && method === 'POST') {
+        const { email } = await request.json();
+        if (!email) return err('이메일을 입력해주세요');
+        const user = await env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email.toLowerCase()).first();
+        // 보안상 사용자 존재 여부 노출 안 함
+        if (!user) return json({ ok: true });
+        // 재설정 토큰 생성 (1시간 유효)
+        const resetToken = Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b=>b.toString(16).padStart(2,'0')).join('');
+        const expiresAt = Math.floor(Date.now()/1000) + 3600;
+        await env.DB.prepare('INSERT OR REPLACE INTO password_resets (token, user_id, expires_at, used) VALUES (?,?,?,0)')
+          .bind(resetToken, user.id, expiresAt).run();
+        const resetUrl = `https://babymeals.pages.dev?reset=${resetToken}`;
+        // Resend로 이메일 발송
+        const RESEND_KEY = env.RESEND_API_KEY;
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_KEY}` },
+          body: JSON.stringify({
+            from: 'onboarding@resend.dev',
+            to: ['iyhee8@gmail.com'],
+            subject: '🍼 이유식 큐브 현황 — 비밀번호 재설정',
+            html: `<p>비밀번호 재설정을 요청하셨어요.</p><p><a href="${resetUrl}">여기를 클릭해서 새 비밀번호를 설정하세요</a></p><p>링크는 1시간 후 만료돼요.</p><p>요청하지 않으셨다면 무시해주세요.</p>`,
+          }),
+        });
+        return json({ ok: true });
+      }
+
+      // ── 비밀번호 재설정 (토큰으로) ──
+      if (path === '/api/auth/reset-password' && method === 'POST') {
+        const { token: resetToken, newPassword } = await request.json();
+        if (!resetToken || !newPassword) return err('올바르지 않은 요청이에요');
+        if (newPassword.length < 6) return err('비밀번호는 6자 이상이어야 해요');
+        const reset = await env.DB.prepare('SELECT * FROM password_resets WHERE token = ? AND used = 0').bind(resetToken).first();
+        if (!reset) return err('유효하지 않은 링크예요');
+        if (reset.expires_at < Math.floor(Date.now()/1000)) return err('링크가 만료됐어요. 다시 요청해주세요');
+        const newSalt = randomSalt();
+        const newHash = await hashPassword(newPassword, newSalt);
+        await env.DB.prepare('UPDATE users SET password_hash=?, salt=? WHERE id=?').bind(newHash, newSalt, reset.user_id).run();
+        await env.DB.prepare('UPDATE password_resets SET used=1 WHERE token=?').bind(resetToken).run();
+        return json({ ok: true });
+      }
+
       // ── 로그인 ──
       if (path === '/api/auth/login' && method === 'POST') {
         const { email, password } = await request.json();
