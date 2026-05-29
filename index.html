@@ -684,7 +684,7 @@ async function deleteBaby(id){if(!confirm('이 아기를 삭제하시겠어요?'
 
 // ── 홈 ──
 function renderHome(){
-  const cubes=babyCubes();const expiring=cubes.filter(c=>{const d=getDaysLeft(c.expire_date);return d!==null&&d<=3&&d>=0;});const expired=cubes.filter(c=>{const d=getDaysLeft(c.expire_date);return d!==null&&d<0;});const dupIds=findDuplicates(cubes);
+  const cubes=babyCubes();const expiring=cubes.filter(c=>{const d=getDaysLeft(c.expire_date);return d!==null&&d<=3&&d>=0&&c.qty>0;});const expired=cubes.filter(c=>{const d=getDaysLeft(c.expire_date);return d!==null&&d<0&&c.qty>0;});const dupIds=findDuplicates(cubes);
   document.getElementById('stats-area').innerHTML=`<div class="stat-row"><div class="stat-card"><div><div class="stat-label">등록된 품목</div><div style="font-size:11px;color:var(--text2);margin-top:1px">${cache.categories.length}개 카테고리</div></div><div class="stat-val">${cubes.length}<span style="font-size:12px;font-weight:400;color:var(--text2)">종</span></div></div></div>`;
   let alerts='';
   if(expired.length)alerts+=`<div class="alert-box danger"><div class="alert-title"><i class="ti ti-alert-circle"></i>유통기한 초과 (${expired.length}개)</div><ul>${expired.map(c=>`<li onclick="goToCube('${c.id}')">${c.emoji} ${c.name} — ${formatDate(c.expire_date)}</li>`).join('')}</ul></div>`;
