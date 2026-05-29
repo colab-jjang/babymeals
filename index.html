@@ -793,7 +793,24 @@ function renderHistory(){
   let items=[...cache.history].filter(h=>!b||!h.baby_id||h.baby_id===b.id).sort((a,c)=>c.created_at-a.created_at);
   if(histFilter!=='all')items=items.filter(h=>h.type===histFilter);
   items=items.slice(0,100);
-  document.getElementById('history-list').innerHTML=items.length?items.map(h=>`<div class="history-item" onclick="openMemoModal('${h.id}')"><div class="history-icon ${h.type||'added'}"><i class="ti ti-${h.type==='used'?'minus':h.type==='discarded'?'trash':'plus'}"></i></div><div class="history-info"><div class="history-name">${h.emoji||'🍱'} ${h.cube_name||h.name||''}</div><div class="history-time">${formatDateTime(h.created_at)}</div>${h.memo?`<span class="history-memo"><i class="ti ti-notes" style="font-size:10px"></i> ${h.memo}</span>`:`<div class="memo-hint"><i class="ti ti-pencil" style="font-size:9px"></i>메모 추가</div>`}</div><div class="history-amount ${h.type||'added'}">${h.type==='used'?'-':h.type==='discarded'?'🗑':'+'}${h.amount}개</div></div>`).join(''):`<div class="empty-state"><i class="ti ti-history"></i><p>기록이 없어요</p></div>`;
+  if(!items.length){document.getElementById('history-list').innerHTML=`<div class="empty-state"><i class="ti ti-history"></i><p>기록이 없어요</p></div>`;return;}
+  // 날짜별 그룹화
+  const groups={};
+  items.forEach(h=>{
+    const dt=new Date((h.created_at*1000)||h.created_at);
+    const key=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+    (groups[key]=groups[key]||[]).push(h);
+  });
+  const today=new Date().toISOString().split('T')[0];
+  const yesterday=new Date(Date.now()-864e5).toISOString().split('T')[0];
+  let html='';
+  Object.entries(groups).forEach(([date,dayItems])=>{
+    const [y,m,d]=date.split('-');
+    const label=date===today?'오늘':date===yesterday?'어제':`${parseInt(m)}월 ${parseInt(d)}일`;
+    html+=`<div style="font-size:11px;font-weight:600;color:var(--text2);padding:10px 0 5px;border-bottom:1px solid var(--border);margin-bottom:4px">${label}</div>`;
+    html+=dayItems.map(h=>`<div class="history-item" onclick="openMemoModal('${h.id}')"><div class="history-icon ${h.type||'added'}"><i class="ti ti-${h.type==='used'?'minus':h.type==='discarded'?'trash':'plus'}"></i></div><div class="history-info"><div class="history-name">${h.emoji||'🍱'} ${h.cube_name||h.name||''}</div><div class="history-time">${new Date((h.created_at*1000)||h.created_at).getHours()}:${String(new Date((h.created_at*1000)||h.created_at).getMinutes()).padStart(2,'0')}</div>${h.memo?`<span class="history-memo"><i class="ti ti-notes" style="font-size:10px"></i> ${h.memo}</span>`:`<div class="memo-hint"><i class="ti ti-pencil" style="font-size:9px"></i>메모 추가</div>`}</div><div class="history-amount ${h.type||'added'}">${h.type==='used'?'-':h.type==='discarded'?'🗑':'+'}${h.amount}개</div></div>`).join('');
+  });
+  document.getElementById('history-list').innerHTML=html;
 }
 function openMemoModal(hid){editingMemoId=hid;const h=cache.history.find(x=>x.id===hid);if(!h)return;document.getElementById('memo-modal-title').textContent=`${h.emoji||'🍱'} ${h.cube_name||h.name||''} — 메모`;document.getElementById('memo-input').value=h.memo||'';document.getElementById('memo-modal').classList.add('open');}
 async function saveMemo(){const h=cache.history.find(x=>x.id===editingMemoId);if(h){h.memo=document.getElementById('memo-input').value.trim();await api('PATCH',`/api/history/${h.id}`,{memo:h.memo});}closeModal('memo-modal');renderHistory();}
