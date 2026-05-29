@@ -146,6 +146,8 @@ async function ensureDefaultCategories(db, userId) {
   }
 }
 
+function uid8ref(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -255,7 +257,24 @@ export default {
         return json({ ok: true });
       }
 
-      // ── init ──
+      // ── favorites ──
+      if (path === '/api/favorites') {
+        if (method === 'GET') {
+          const rows = await env.DB.prepare('SELECT food_name FROM favorites WHERE user_id = ?').bind(userId).all();
+          return json(rows.results.map(r => r.food_name));
+        }
+        if (method === 'POST') {
+          const { food_name } = await request.json();
+          const existing = await env.DB.prepare('SELECT id FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).first();
+          if (existing) {
+            await env.DB.prepare('DELETE FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).run();
+            return json({ ok: true, liked: false });
+          } else {
+            await env.DB.prepare('INSERT INTO favorites (id, user_id, food_name) VALUES (?,?,?)').bind(uid8ref(), userId, food_name).run();
+            return json({ ok: true, liked: true });
+          }
+        }
+      }
       if (path === '/api/init' && method === 'GET') {
         await ensureDefaultCategories(env.DB, userId);
         const [babiesR, catsR, settingsR] = await Promise.all([
@@ -267,15 +286,16 @@ export default {
         const cats = catsR.results.map(r => ({ ...r, id: r.id.replace(`${userId}_`, '') }));
         const settings = settingsR || { user_id: userId, active_baby_id: null, theme_idx: 0 };
         const activeBabyId = settings.active_baby_id || babies[0]?.id || null;
-        const [cubesR, histR] = await Promise.all([
+        const [cubesR, histR, favsR] = await Promise.all([
           activeBabyId
             ? env.DB.prepare('SELECT * FROM cubes WHERE baby_id = ? ORDER BY created_at').bind(activeBabyId).all()
             : env.DB.prepare('SELECT * FROM cubes WHERE user_id = ? ORDER BY created_at').bind(userId).all(),
           activeBabyId
             ? env.DB.prepare('SELECT * FROM history WHERE baby_id = ? ORDER BY created_at DESC LIMIT 100').bind(activeBabyId).all()
             : env.DB.prepare('SELECT * FROM history WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').bind(userId).all(),
+          env.DB.prepare('SELECT food_name FROM favorites WHERE user_id = ?').bind(userId).all(),
         ]);
-        return json({ babies, categories: cats, settings, cubes: cubesR.results, history: histR.results });
+        return json({ babies, categories: cats, settings, cubes: cubesR.results, history: histR.results, favorites: favsR.results.map(r=>r.food_name) });
       }
 
       // ── settings ──
