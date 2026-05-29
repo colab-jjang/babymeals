@@ -423,6 +423,10 @@ export default {
           await env.DB.prepare('UPDATE history SET memo=? WHERE id=? AND user_id=?').bind(body.memo, histMatch[1], userId).run();
           return json({ ok: true });
         }
+        if (method === 'DELETE') {
+          await env.DB.prepare('DELETE FROM history WHERE id=? AND user_id=?').bind(histMatch[1], userId).run();
+          return json({ ok: true });
+        }
       }
 
       return err('Not found', 404);
