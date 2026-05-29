@@ -702,7 +702,7 @@ function renderCalendar(){
   document.getElementById('cal-labels').innerHTML=['일','월','화','수','목','금','토'].map(d=>`<div class="cal-day-label">${d}</div>`).join('');
   const firstDay=new Date(calYear,calMonth,1).getDay(),lastDate=new Date(calYear,calMonth+1,0).getDate();
   const todayStr=new Date().toISOString().split('T')[0];
-  const cubes=babyCubes();const evMap={};cubes.forEach(c=>{if(c.expire_date){const k=c.expire_date.substring(0,10);(evMap[k]=evMap[k]||[]).push(c);}});
+  const cubes=babyCubes();const evMap={};cubes.filter(c=>c.qty>0).forEach(c=>{if(c.expire_date){const k=c.expire_date.substring(0,10);(evMap[k]=evMap[k]||[]).push(c);}});
   let cells='';
   for(let i=0;i<firstDay;i++){const pd=new Date(calYear,calMonth,-(firstDay-i-2));cells+=`<div class="cal-cell other-month"><div class="cal-date">${pd.getDate()}</div></div>`;}
   for(let d=1;d<=lastDate;d++){const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const ev=evMap[ds]||[];const cls=['cal-cell',ds===todayStr?'today':'',ev.length?'has-ev':'',ds===selectedCalDate?'selected':''].filter(Boolean).join(' ');cells+=`<div class="${cls}" onclick="selectCalDate('${ds}')"><div class="cal-date">${d}</div>${ev.length?`<div class="cal-dots">${ev.slice(0,3).map(e=>{const dl=getDaysLeft(e.expire_date);return`<div class="cal-dot" style="background:${dl<0?'#D85A30':dl<=3?'#EF9F27':'#1D9E75'}"></div>`;}).join('')}</div>`:''}</div>`;}
