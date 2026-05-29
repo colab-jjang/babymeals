@@ -347,7 +347,7 @@ input[type="date"].form-input{width:100%;max-width:100%;box-sizing:border-box}
 
 <!-- 모달들 -->
 <div class="modal-overlay" id="add-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="add-modal-title">큐브 추가</div><div id="add-modal-content"></div></div></div>
-<div class="modal-overlay" id="memo-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="memo-modal-title">메모</div><div class="form-group"><label class="form-label">메모 내용</label><textarea class="form-input" id="memo-input" rows="3" placeholder="예: 오전 이유식에 사용..."></textarea></div><button class="btn-primary" onclick="saveMemo()">저장</button><button class="btn-secondary" onclick="closeModal('memo-modal')">취소</button></div></div>
+<div class="modal-overlay" id="memo-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="memo-modal-title">메모</div><div class="form-group"><label class="form-label">메모 내용</label><textarea class="form-input" id="memo-input" rows="3" placeholder="예: 오전 이유식에 사용..."></textarea></div><button class="btn-primary" onclick="saveMemo()">저장</button><button class="btn-secondary" onclick="closeModal('memo-modal')">취소</button><button class="btn-danger" onclick="deleteHistory()">기록 삭제</button></div></div>
 
 <div class="modal-overlay" id="use-modal">
   <div class="modal">
@@ -816,6 +816,12 @@ function renderHistory(){
 }
 function openMemoModal(hid){editingMemoId=hid;const h=cache.history.find(x=>x.id===hid);if(!h)return;document.getElementById('memo-modal-title').textContent=`${h.emoji||'🍱'} ${h.cube_name||h.name||''} — 메모`;document.getElementById('memo-input').value=h.memo||'';document.getElementById('memo-modal').classList.add('open');}
 async function saveMemo(){const h=cache.history.find(x=>x.id===editingMemoId);if(h){h.memo=document.getElementById('memo-input').value.trim();await api('PATCH',`/api/history/${h.id}`,{memo:h.memo});}closeModal('memo-modal');renderHistory();}
+async function deleteHistory(){
+  if(!confirm('이 기록을 삭제할까요?'))return;
+  await api('DELETE',`/api/history/${editingMemoId}`);
+  cache.history=cache.history.filter(h=>h.id!==editingMemoId);
+  closeModal('memo-modal');renderHistory();showToast('🗑 기록이 삭제됐어요');
+}
 
 // ── 큐브 추가/수정 ──
 function openAddModal(multi){document.getElementById('add-modal-title').textContent=multi?'일괄 추가':'큐브 추가';document.getElementById('add-modal-content').innerHTML=multi?buildMultiForm():buildSingleForm(null);multiRowCount=1;document.getElementById('add-modal').classList.add('open');}
