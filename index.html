@@ -623,11 +623,16 @@ function activeBaby(){return cache.babies.find(b=>b.id===cache.settings.active_b
 function babyCubes(){const b=activeBaby();if(!b)return cache.cubes;return cache.cubes.filter(c=>c.baby_id===b.id);}
 function getDaysLeft(d){if(!d)return null;return Math.ceil((new Date(d)-new Date())/864e5);}
 function formatDate(d){if(!d)return'-';const dt=new Date(d);return`${dt.getMonth()+1}/${dt.getDate()}`;}
-function formatDateTime(ts){const dt=new Date(ts*1000||ts);return`${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;}
+function formatDateTime(ts){const dt=tsToDate(ts);return`${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;}
+
 function getDplus(b){if(!b)return null;return Math.floor((new Date()-new Date(b))/864e5)+1;}
 function findDuplicates(cubes){const m={};cubes.forEach(c=>{const k=(c.name||'').trim().toLowerCase();(m[k]=m[k]||[]).push(c.id);});const s=new Set();Object.values(m).forEach(ids=>{if(ids.length>1)ids.forEach(id=>s.add(id));});return s;}
 function applyTheme(i){const t=THEMES[i]||THEMES[0];document.documentElement.style.setProperty('--ac',t.ac);document.documentElement.style.setProperty('--ac-light',t.light);document.documentElement.style.setProperty('--ac-border',t.border);}
-function uid8(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function tsToDate(ts){
+  // Unix 타임스탬프가 초인지 밀리초인지 판별
+  const ms = ts > 1e10 ? ts : ts * 1000;
+  return new Date(ms);
+}
 
 function render(){renderBabyChip();renderHome();renderCubes();renderCatManage();renderHistory();renderCalendar();}
 
@@ -799,18 +804,18 @@ function renderHistory(){
   // 날짜별 그룹화
   const groups={};
   items.forEach(h=>{
-    const dt=new Date((h.created_at*1000)||h.created_at);
+    const dt=tsToDate(h.created_at);
     const key=`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
     (groups[key]=groups[key]||[]).push(h);
   });
   const today=new Date().toISOString().split('T')[0];
   const yesterday=new Date(Date.now()-864e5).toISOString().split('T')[0];
   let html='';
-  Object.entries(groups).forEach(([date,dayItems])=>{
+  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(date=>{
     const [y,m,d]=date.split('-');
     const label=date===today?'오늘':date===yesterday?'어제':`${parseInt(m)}월 ${parseInt(d)}일`;
     html+=`<div style="font-size:11px;font-weight:600;color:var(--text2);padding:10px 0 5px;border-bottom:1px solid var(--border);margin-bottom:4px">${label}</div>`;
-    html+=dayItems.map(h=>`<div class="history-item" onclick="openMemoModal('${h.id}')"><div class="history-icon ${h.type||'added'}"><i class="ti ti-${h.type==='used'?'minus':h.type==='discarded'?'trash':'plus'}"></i></div><div class="history-info"><div class="history-name">${h.emoji||'🍱'} ${h.cube_name||h.name||''}</div><div class="history-time">${new Date((h.created_at*1000)||h.created_at).getHours()}:${String(new Date((h.created_at*1000)||h.created_at).getMinutes()).padStart(2,'0')}</div>${h.memo?`<span class="history-memo"><i class="ti ti-notes" style="font-size:10px"></i> ${h.memo}</span>`:`<div class="memo-hint"><i class="ti ti-pencil" style="font-size:9px"></i>메모 추가</div>`}</div><div class="history-amount ${h.type||'added'}">${h.type==='used'?'-':h.type==='discarded'?'🗑':'+'}${h.amount}개</div></div>`).join('');
+    html+=groups[date].map(h=>{const dt2=tsToDate(h.created_at);return`<div class="history-item" onclick="openMemoModal('${h.id}')"><div class="history-icon ${h.type||'added'}"><i class="ti ti-${h.type==='used'?'minus':h.type==='discarded'?'trash':'plus'}"></i></div><div class="history-info"><div class="history-name">${h.emoji||'🍱'} ${h.cube_name||h.name||''}</div><div class="history-time">${dt2.getHours()}:${String(dt2.getMinutes()).padStart(2,'0')}</div>${h.memo?`<span class="history-memo"><i class="ti ti-notes" style="font-size:10px"></i> ${h.memo}</span>`:`<div class="memo-hint"><i class="ti ti-pencil" style="font-size:9px"></i>메모 추가</div>`}</div><div class="history-amount ${h.type||'added'}">${h.type==='used'?'-':h.type==='discarded'?'🗑':'+'}${h.amount}개</div></div>`;}).join('');
   });
   document.getElementById('history-list').innerHTML=html;
 }
