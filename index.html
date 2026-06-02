@@ -633,6 +633,7 @@ function tsToDate(ts){
   const ms = ts > 1e10 ? ts : ts * 1000;
   return new Date(ms);
 }
+function uid8(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 
 function render(){renderBabyChip();renderHome();renderCubes();renderCatManage();renderHistory();renderCalendar();}
 
