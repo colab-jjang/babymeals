@@ -260,18 +260,25 @@ export default {
       // ── favorites ──
       if (path === '/api/favorites') {
         if (method === 'GET') {
-          const rows = await env.DB.prepare('SELECT food_name FROM favorites WHERE user_id = ?').bind(userId).all();
-          return json(rows.results.map(r => r.food_name));
+          const rows = await env.DB.prepare('SELECT food_name, reaction FROM favorites WHERE user_id = ?').bind(userId).all();
+          return json(rows.results);
         }
         if (method === 'POST') {
-          const { food_name } = await request.json();
-          const existing = await env.DB.prepare('SELECT id FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).first();
+          const { food_name, reaction } = await request.json();
+          const existing = await env.DB.prepare('SELECT id, reaction FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).first();
           if (existing) {
-            await env.DB.prepare('DELETE FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).run();
-            return json({ ok: true, liked: false });
+            if (existing.reaction === reaction) {
+              // 같은 반응 누르면 삭제
+              await env.DB.prepare('DELETE FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).run();
+              return json({ ok: true, reaction: null });
+            } else {
+              // 다른 반응으로 변경
+              await env.DB.prepare('UPDATE favorites SET reaction = ? WHERE user_id = ? AND food_name = ?').bind(reaction, userId, food_name).run();
+              return json({ ok: true, reaction });
+            }
           } else {
-            await env.DB.prepare('INSERT INTO favorites (id, user_id, food_name) VALUES (?,?,?)').bind(uid8ref(), userId, food_name).run();
-            return json({ ok: true, liked: true });
+            await env.DB.prepare('INSERT INTO favorites (id, user_id, food_name, reaction) VALUES (?,?,?,?)').bind(uid8ref(), userId, food_name, reaction).run();
+            return json({ ok: true, reaction });
           }
         }
       }
@@ -295,7 +302,7 @@ export default {
             : env.DB.prepare('SELECT * FROM history WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').bind(userId).all(),
           env.DB.prepare('SELECT food_name FROM favorites WHERE user_id = ?').bind(userId).all(),
         ]);
-        return json({ babies, categories: cats, settings, cubes: cubesR.results, history: histR.results, favorites: favsR.results.map(r=>r.food_name) });
+        return json({ babies, categories: cats, settings, cubes: cubesR.results, history: histR.results, favorites: favsR.results });
       }
 
       // ── settings ──
