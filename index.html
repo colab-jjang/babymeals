@@ -427,7 +427,7 @@ const FOOD_MAP=[['양배추','🥬','veg'],['브로콜리','🥦','veg'],['콜�
 const CAT_EMOJI_MAP=[['채소','🥦'],['야채','🥦'],['과일','🍎'],['곡물','🌾'],['죽','🍲'],['단백질','🥩'],['고기','🥩'],['해산물','🐟'],['생선','🐟'],['유제품','🧀'],['우유','🥛'],['간식','🍪'],['디저트','🍮'],['음료','🧃'],['달걀','🥚'],['두부','⬜'],['콩','🫘'],['견과','🥜'],['새우','🦐'],['닭','🐓'],['소','🥩'],['돼지','🐷']];
 const CAT_COLORS=['#D85A30','#1D9E75','#378ADD','#7F77DD','#D4537E','#EF9F27','#639922','#BA7517'];
 const THEMES=[{name:'핑크',ac:'#D4537E',light:'#FBEAF0',border:'#ED93B1'},{name:'민트',ac:'#1D9E75',light:'#E1F5EE',border:'#6ECFB0'},{name:'블루',ac:'#378ADD',light:'#E6F1FB',border:'#8BBDE8'},{name:'보라',ac:'#7F77DD',light:'#EEEDFE',border:'#B3AEED'},{name:'오렌지',ac:'#D85A30',light:'#FAECE7',border:'#E8956A'},{name:'골드',ac:'#BA7517',light:'#FAEEDA',border:'#DBA84A'},{name:'초록',ac:'#3B6D11',light:'#EAF3DE',border:'#7EAA44'},{name:'인디고',ac:'#4361A8',light:'#E8EDF8',border:'#8AA3D4'}];
-const SORT_OPTIONS=[{id:'cat',label:'카테고리'},{id:'expire',label:'기한 임박'},{id:'qty_asc',label:'재고 적은 순'},{id:'qty_desc',label:'재고 많은 순'},{id:'name',label:'이름순'},{id:'made',label:'최근 제조'},{id:'fav',label:'❤️'}];
+const SORT_OPTIONS=[{id:'cat',label:'카테고리'},{id:'expire',label:'기한 임박'},{id:'qty_asc',label:'재고 적은 순'},{id:'qty_desc',label:'재고 많은 순'},{id:'name',label:'이름순'},{id:'made',label:'최근 제조'},{id:'fav',label:'❤️'},{id:'dislike',label:'💔'}];
 const PARTICLE_LABELS=['1단계 (고운)','2단계 (2-3mm)','3단계 (4-5mm)'];
 
 // ── 기기 고유 ID — 쿠키에 저장 (배포해도 유지) ──
@@ -604,7 +604,7 @@ async function loadAll(){
     cache.settings=data.settings||{theme_idx:0,active_baby_id:null};
     cache.cubes=data.cubes||[];
     cache.history=data.history||[];
-    cache.favorites=data.favorites||[];
+    cache.favorites=data.favorites||[];  // [{food_name, reaction}]
     if(!cache.settings.active_baby_id&&cache.babies.length)
       cache.settings.active_baby_id=cache.babies[0].id;
     applyTheme(cache.settings.theme_idx||0);
@@ -773,7 +773,8 @@ function calMove(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}else if(ca
 function calGoToday(){calYear=new Date().getFullYear();calMonth=new Date().getMonth();selectedCalDate=null;renderCalendar();}
 
 // ── 큐브 ──
-function getSortedCubes(){const q=(document.getElementById('search-input')?.value||'').toLowerCase();const sb=document.getElementById('search-clear');if(sb)sb.style.display=q?'block':'none';let cubes=babyCubes().filter(c=>!q||(c.name||'').toLowerCase().includes(q));if(hideEmpty)cubes=cubes.filter(c=>c.qty>0);if(currentSort==='fav')return cubes.filter(c=>cache.favorites.includes((c.name||'').trim().toLowerCase()));if(currentSort==='expire')cubes=[...cubes].sort((a,b)=>(getDaysLeft(a.expire_date)??9999)-(getDaysLeft(b.expire_date)??9999));else if(currentSort==='qty_asc')cubes=[...cubes].sort((a,b)=>a.qty-b.qty);else if(currentSort==='qty_desc')cubes=[...cubes].sort((a,b)=>b.qty-a.qty);else if(currentSort==='name')cubes=[...cubes].sort((a,b)=>(a.name||'').localeCompare(b.name||'','ko'));else if(currentSort==='made')cubes=[...cubes].sort((a,b)=>((b.made_date||'')>(a.made_date||''))?1:-1);return cubes;}
+function getFavReaction(foodKey){const f=cache.favorites.find(x=>x.food_name===foodKey);return f?f.reaction:null;}
+function getSortedCubes(){const q=(document.getElementById('search-input')?.value||'').toLowerCase();const sb=document.getElementById('search-clear');if(sb)sb.style.display=q?'block':'none';let cubes=babyCubes().filter(c=>!q||(c.name||'').toLowerCase().includes(q));if(hideEmpty)cubes=cubes.filter(c=>c.qty>0);if(currentSort==='fav')return cubes.filter(c=>getFavReaction((c.name||'').trim().toLowerCase())==='like');if(currentSort==='dislike')return cubes.filter(c=>getFavReaction((c.name||'').trim().toLowerCase())==='dislike');if(currentSort==='expire')cubes=[...cubes].sort((a,b)=>(getDaysLeft(a.expire_date)??9999)-(getDaysLeft(b.expire_date)??9999));else if(currentSort==='qty_asc')cubes=[...cubes].sort((a,b)=>a.qty-b.qty);else if(currentSort==='qty_desc')cubes=[...cubes].sort((a,b)=>b.qty-a.qty);else if(currentSort==='name')cubes=[...cubes].sort((a,b)=>(a.name||'').localeCompare(b.name||'','ko'));else if(currentSort==='made')cubes=[...cubes].sort((a,b)=>((b.made_date||'')>(a.made_date||''))?1:-1);return cubes;}
 function renderCubes(){
   document.getElementById('sort-bar').innerHTML=SORT_OPTIONS.map(s=>`<div class="sort-chip${s.id===currentSort?' active':''}" onclick="setSort('${s.id}')">${s.label}</div>`).join('')+`<div class="sort-chip${!hideEmpty?' active':''}" onclick="toggleHideEmpty()">전체 보기</div>`;
   const cubes=getSortedCubes();const dupIds=findDuplicates(cubes);
@@ -793,15 +794,21 @@ function renderCubeCard(cube,dupIds){
   const isEmpty=cube.qty<=0;
   const isDup=dupIds&&dupIds.has(cube.id);
   const foodKey=(cube.name||'').trim().toLowerCase();
-  const isFav=cache.favorites.includes(foodKey);
+  const reaction=getFavReaction(foodKey);
   const ab=cube.allergy==='yes'?`<span class="allergy-badge allergy-yes">⚠️ 알러지</span>`:cube.allergy==='no'?`<span class="allergy-badge allergy-no">✓ 이상없음</span>`:'';
   const pp=cube.particle!==undefined?`<span class="meta-pill pill-particle">입자 ${PARTICLE_LABELS[cube.particle]||'1단계'}</span>`:'';
-  return`<div class="cube-card${isDup?' dup-flag':''}${isEmpty?' empty-cube':''}" id="cubecard-${cube.id}" style="${isEmpty?'opacity:0.45':''}"><div class="cube-top"><div class="cube-name-wrap"><span style="font-size:18px">${cube.emoji}</span><span class="cube-name">${cube.name}</span>${isEmpty?`<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:var(--bg2);color:var(--text2);font-weight:600">재고없음</span>`:''}`+`${ab}${isDup?`<span class="dup-badge"><i class="ti ti-copy" style="font-size:9px"></i> 중복</span>`:''}<button onclick="toggleFavorite('${foodKey}')" style="background:none;border:none;cursor:pointer;font-size:15px;padding:0 2px;line-height:1;flex-shrink:0">${isFav?'❤️':'🤍'}</button></div><div class="cube-right"><div style="font-size:18px;font-weight:700;color:var(--text)">${cube.qty}<span style="font-size:11px;font-weight:400;color:var(--text2)">개</span></div></div></div><div class="cube-meta"><span class="meta-pill ${pc}"><i class="ti ti-calendar" style="font-size:9px"></i>${pt}</span>${cube.made_date?`<span class="meta-pill pill-info">제조 ${formatDate(cube.made_date)}</span>`:''}${cube.weight?`<span class="meta-pill pill-info">${cube.weight}${cube.unit||'g'}/큐브</span>`:''}${pp}</div>${cube.note?`<div class="cube-note"><i class="ti ti-notes" style="font-size:10px"></i> ${cube.note}</div>`:''}<div class="cube-actions"><button class="btn-use" onclick="openUseModal('${cube.id}')"${isEmpty?' disabled style="opacity:0.5;cursor:not-allowed"':''}>🍽 사용하기</button><button class="cube-edit-btn" onclick="openEditModal('${cube.id}')"><i class="ti ti-edit" style="font-size:11px"></i> 수정</button><button class="cube-discard-btn" onclick="discardCube('${cube.id}')"><i class="ti ti-trash" style="font-size:11px"></i> 전량 폐기</button></div></div>`;
+  const favBtn=`<button onclick="toggleFavorite('${foodKey}','like')" style="background:none;border:none;cursor:pointer;font-size:15px;padding:0 1px;line-height:1;flex-shrink:0" title="좋아요">${reaction==='like'?'❤️':'🤍'}</button><button onclick="toggleFavorite('${foodKey}','dislike')" style="background:none;border:none;cursor:pointer;font-size:15px;padding:0 1px;line-height:1;flex-shrink:0" title="싫어요">${reaction==='dislike'?'💔':'🖤'}</button>`;
+  return`<div class="cube-card${isDup?' dup-flag':''}${isEmpty?' empty-cube':''}${reaction==='dislike'?' dislike-cube':''}" id="cubecard-${cube.id}" style="${isEmpty?'opacity:0.45':''}"><div class="cube-top"><div class="cube-name-wrap"><span style="font-size:18px">${cube.emoji}</span><span class="cube-name">${cube.name}</span>${isEmpty?`<span style="font-size:10px;padding:2px 7px;border-radius:6px;background:var(--bg2);color:var(--text2);font-weight:600">재고없음</span>`:''}${ab}${isDup?`<span class="dup-badge"><i class="ti ti-copy" style="font-size:9px"></i> 중복</span>`:''}${favBtn}</div><div class="cube-right"><div style="font-size:18px;font-weight:700;color:var(--text)">${cube.qty}<span style="font-size:11px;font-weight:400;color:var(--text2)">개</span></div></div></div><div class="cube-meta"><span class="meta-pill ${pc}"><i class="ti ti-calendar" style="font-size:9px"></i>${pt}</span>${cube.made_date?`<span class="meta-pill pill-info">제조 ${formatDate(cube.made_date)}</span>`:''}${cube.weight?`<span class="meta-pill pill-info">${cube.weight}${cube.unit||'g'}/큐브</span>`:''}${pp}</div>${cube.note?`<div class="cube-note"><i class="ti ti-notes" style="font-size:10px"></i> ${cube.note}</div>`:''}<div class="cube-actions"><button class="btn-use" onclick="openUseModal('${cube.id}')"${isEmpty?' disabled style="opacity:0.5;cursor:not-allowed"':''}>🍽 사용하기</button><button class="cube-edit-btn" onclick="openEditModal('${cube.id}')"><i class="ti ti-edit" style="font-size:11px"></i> 수정</button><button class="cube-discard-btn" onclick="discardCube('${cube.id}')"><i class="ti ti-trash" style="font-size:11px"></i> 전량 폐기</button></div></div>`;
 }
-async function toggleFavorite(foodKey){
-  const data=await api('POST','/api/favorites',{food_name:foodKey});
-  if(data.liked){cache.favorites.push(foodKey);}
-  else{cache.favorites=cache.favorites.filter(f=>f!==foodKey);}
+async function toggleFavorite(foodKey, reaction){
+  const data=await api('POST','/api/favorites',{food_name:foodKey, reaction});
+  if(data.reaction===null){
+    cache.favorites=cache.favorites.filter(f=>f.food_name!==foodKey);
+  } else {
+    const existing=cache.favorites.find(f=>f.food_name===foodKey);
+    if(existing){existing.reaction=data.reaction;}
+    else{cache.favorites.push({food_name:foodKey,reaction:data.reaction});}
+  }
   renderCubes();
 }
 function toggleHideEmpty(){hideEmpty=!hideEmpty;renderCubes();}
