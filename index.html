@@ -627,7 +627,7 @@ function formatDate(d){if(!d)return'-';const dt=new Date(d);return`${dt.getMonth
 function formatDateTime(ts){const dt=tsToDate(ts);return`${dt.getMonth()+1}/${dt.getDate()} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;}
 
 function getDplus(b){if(!b)return null;return Math.floor((new Date()-new Date(b))/864e5)+1;}
-function findDuplicates(cubes){const m={};cubes.forEach(c=>{const k=(c.name||'').trim().toLowerCase();(m[k]=m[k]||[]).push(c.id);});const s=new Set();Object.values(m).forEach(ids=>{if(ids.length>1)ids.forEach(id=>s.add(id));});return s;}
+function findDuplicates(cubes){const m={};cubes.filter(c=>c.qty>0).forEach(c=>{const k=(c.name||'').trim().toLowerCase();(m[k]=m[k]||[]).push(c.id);});const s=new Set();Object.values(m).forEach(ids=>{if(ids.length>1)ids.forEach(id=>s.add(id));});return s;}
 function applyTheme(i){const t=THEMES[i]||THEMES[0];document.documentElement.style.setProperty('--ac',t.ac);document.documentElement.style.setProperty('--ac-light',t.light);document.documentElement.style.setProperty('--ac-border',t.border);}
 function tsToDate(ts){
   // Unix 타임스탬프가 초인지 밀리초인지 판별
@@ -982,13 +982,17 @@ async function saveCube(editId){
   // 반응 저장
   const reaction=getSelectedReaction();
   const foodKey=name.trim().toLowerCase();
-  if(reaction==='none'){
-    // 기존 반응 삭제
-    const existing=cache.favorites.find(f=>f.food_name===foodKey);
-    if(existing){api('POST','/api/favorites',{food_name:foodKey,reaction:existing.reaction}).then(d=>{if(d.reaction===null)cache.favorites=cache.favorites.filter(f=>f.food_name!==foodKey);});}
-  } else {
+  const curReaction=getFavReaction(foodKey);
+  if(reaction==='none'&&curReaction){
+    // 미설정으로 변경 — 삭제
+    api('POST','/api/favorites',{food_name:foodKey,reaction:curReaction}).then(()=>{
+      cache.favorites=cache.favorites.filter(f=>f.food_name!==foodKey);
+    });
+  } else if(reaction!=='none'){
     api('POST','/api/favorites',{food_name:foodKey,reaction}).then(d=>{
       if(d.reaction){const ex=cache.favorites.find(f=>f.food_name===foodKey);if(ex)ex.reaction=d.reaction;else cache.favorites.push({food_name:foodKey,reaction:d.reaction});}
+      else{cache.favorites=cache.favorites.filter(f=>f.food_name!==foodKey);}
+      renderCubes();
     });
   }
 }
