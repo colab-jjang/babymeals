@@ -1060,18 +1060,20 @@ function buildMultiForm(){
       </div>
     </div>
     <div class="section-title" style="margin-top:2px">큐브 목록 <span style="font-weight:400;font-size:10px;text-transform:none">(이름 입력 시 카테고리 자동 설정)</span></div>
-    <div style="display:grid;grid-template-columns:1.2fr 1fr 44px 44px;gap:4px;margin-bottom:5px;padding:0 2px">
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 44px 44px 60px;gap:4px;margin-bottom:5px;padding:0 2px">
       <div style="font-size:10px;color:var(--text2)">이름</div>
       <div style="font-size:10px;color:var(--text2)">카테고리</div>
       <div style="font-size:10px;color:var(--text2);text-align:center">개수</div>
       <div style="font-size:10px;color:var(--text2);text-align:center">중량</div>
+      <div style="font-size:10px;color:var(--text2);text-align:center">입자</div>
     </div>
     <div id="multi-rows">
-      <div class="multi-add-row" data-idx="0" style="display:grid;grid-template-columns:1.2fr 1fr 44px 44px;gap:4px;margin-bottom:6px">
+      <div class="multi-add-row" data-idx="0" style="display:grid;grid-template-columns:1.2fr 1fr 44px 44px 60px;gap:4px;margin-bottom:6px">
         <input type="text" class="form-input" placeholder="예: 당근" id="mr-name-0" style="padding:7px 6px" oninput="onMrNameInput(0)">
         <select class="form-select" id="mr-cat-0" style="padding:7px 4px;font-size:11px" onchange="onMrCatChange(0,this)">${buildMultiCatOptions(defCat)}</select>
         <input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-0" style="padding:7px 4px;text-align:center">
         <input type="number" class="form-input" placeholder="g" min="0" id="mr-weight-0" style="padding:7px 4px;text-align:center">
+        <select class="form-select" id="mr-particle-0" style="padding:7px 3px;font-size:10px"><option value="-1">공통</option><option value="0">1단계</option><option value="1">2단계</option><option value="2">3단계</option><option value="3">스틱</option></select>
       </div>
     </div>
     <button class="add-row-btn" id="add-row-btn" onclick="addMultiRow()"><i class="ti ti-plus"></i> 항목 추가</button>
@@ -1160,11 +1162,12 @@ function getMParticle(){
 function addMultiRow(){
   const idx=multiRowCount++;const defCat=cache.categories[0]?.id||'';
   const div=document.createElement('div');div.className='multi-add-row';div.dataset.idx=idx;
-  div.style.cssText='display:grid;grid-template-columns:1.2fr 1fr 44px 44px;gap:4px;margin-bottom:6px';
+  div.style.cssText='display:grid;grid-template-columns:1.2fr 1fr 44px 44px 60px;gap:4px;margin-bottom:6px';
   div.innerHTML=`<input type="text" class="form-input" placeholder="예: 브로콜리" id="mr-name-${idx}" style="padding:7px 6px" oninput="onMrNameInput(${idx})">
     <select class="form-select" id="mr-cat-${idx}" style="padding:7px 4px;font-size:11px" onchange="onMrCatChange(${idx},this)">${buildMultiCatOptions(defCat)}</select>
     <input type="number" class="form-input" placeholder="개" min="0" step="0.5" value="1" id="mr-qty-${idx}" style="padding:7px 4px;text-align:center">
-    <input type="number" class="form-input" placeholder="g" min="0" id="mr-weight-${idx}" style="padding:7px 4px;text-align:center">`;
+    <input type="number" class="form-input" placeholder="g" min="0" id="mr-weight-${idx}" style="padding:7px 4px;text-align:center">
+    <select class="form-select" id="mr-particle-${idx}" style="padding:7px 3px;font-size:10px"><option value="-1">공통</option><option value="0">1단계</option><option value="1">2단계</option><option value="2">3단계</option><option value="3">스틱</option></select>`;
   document.getElementById('add-row-btn').before(div);
 }
 async function saveMultiCubes(){
@@ -1177,10 +1180,12 @@ async function saveMultiCubes(){
     const name=document.getElementById(`mr-name-${idx}`)?.value?.trim();if(!name)return;
     const qty=parseFloat(document.getElementById(`mr-qty-${idx}`)?.value||1);
     const weight=document.getElementById(`mr-weight-${idx}`)?.value||'';
+    const rowParticleVal=parseInt(document.getElementById(`mr-particle-${idx}`)?.value??'-1');
+    const rowParticle=rowParticleVal>=0?rowParticleVal:getMParticle();
     const{emoji,cat}=lookupFood(name);
     const rowCat=document.getElementById(`mr-cat-${idx}`)?.value;
     const finalCat=(rowCat&&rowCat!=='__new__')?rowCat:(cat||cache.categories[0]?.id||'');
-    const cube={id:uid8(),name,emoji,cat_id:finalCat,qty,weight,unit,made_date:madeDate||null,expire_date:expireDate||null,allergy:'unknown',particle:getMParticle(),note:'',baby_id:b?b.id:null};
+    const cube={id:uid8(),name,emoji,cat_id:finalCat,qty,weight,unit,made_date:madeDate||null,expire_date:expireDate||null,allergy:'unknown',particle:rowParticle,note:'',baby_id:b?b.id:null};
     cache.cubes.push(cube);saves.push(api('POST','/api/cubes',cube));
     const hid='h'+uid8();saves.push(api('POST','/api/history',{id:hid,baby_id:cube.baby_id,cube_name:name,emoji,type:'added',amount:qty,memo:''}));
     cache.history.unshift({id:hid,baby_id:cube.baby_id,cube_name:name,emoji,type:'added',amount:qty,memo:'',created_at:Math.floor(Date.now()/1000)});added++;
