@@ -190,6 +190,7 @@ export default {
           const rows = await env.DB.prepare('SELECT food_name, reaction FROM favorites WHERE user_id = ?').bind(userId).all();
           return json(rows.results);
         }
+        // POST = 토글 (큐브 카드에서 직접 탭할 때)
         if (method === 'POST') {
           const { food_name, reaction } = await request.json();
           const existing = await env.DB.prepare('SELECT id, reaction FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).first();
@@ -205,6 +206,21 @@ export default {
             await env.DB.prepare('INSERT INTO favorites (id, user_id, food_name, reaction) VALUES (?,?,?,?)').bind(uid8ref(), userId, food_name, reaction).run();
             return json({ ok: true, reaction });
           }
+        }
+        // PUT = 무조건 덮어쓰기 (수정 모달에서 저장할 때)
+        if (method === 'PUT') {
+          const { food_name, reaction } = await request.json();
+          if (!reaction || reaction === 'none') {
+            await env.DB.prepare('DELETE FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).run();
+            return json({ ok: true, reaction: null });
+          }
+          const existing = await env.DB.prepare('SELECT id FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).first();
+          if (existing) {
+            await env.DB.prepare('UPDATE favorites SET reaction = ? WHERE user_id = ? AND food_name = ?').bind(reaction, userId, food_name).run();
+          } else {
+            await env.DB.prepare('INSERT INTO favorites (id, user_id, food_name, reaction) VALUES (?,?,?,?)').bind(uid8ref(), userId, food_name, reaction).run();
+          }
+          return json({ ok: true, reaction });
         }
       }
 
@@ -228,7 +244,7 @@ export default {
             : env.DB.prepare('SELECT * FROM history WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').bind(userId).all(),
           env.DB.prepare('SELECT food_name FROM favorites WHERE user_id = ?').bind(userId).all(),
         ]);
-        return json({ babies, categories: cats, settings, cubes: cubesR.results, history: histR.results, favorites: favsR.results.map(r=>({food_name:r.food_name,reaction:r.reaction||'like'})) });
+        return json({ babies, categories: cats, settings, cubes: cubesR.results, history: histR.results, favorites: favsR.results.map(r=>({food_name:r.food_name,reaction:r.reaction})) });
       }
 
       if (path === '/api/settings') {
