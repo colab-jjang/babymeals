@@ -348,7 +348,7 @@ input[type="date"].form-input{width:100%;max-width:100%;box-sizing:border-box}
 <!-- 모달들 -->
 <div class="modal-overlay" id="add-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="add-modal-title">큐브 추가</div><div id="add-modal-content"></div></div></div>
 <div class="modal-overlay" id="weaning-modal"><div class="modal"><div class="modal-handle"></div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div class="modal-title" style="margin-bottom:0">이유식 단계 가이드</div><span style="font-size:10px;color:var(--text2)">참고용이에요</span></div><div id="weaning-content"></div><button class="btn-secondary" onclick="closeModal('weaning-modal')" style="margin-top:4px">닫기</button></div></div>
-<div class="modal-overlay" id="memo-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="memo-modal-title">메모</div><div class="form-group"><label class="form-label">메모 내용</label><textarea class="form-input" id="memo-input" rows="3" placeholder="예: 오전 이유식에 사용..."></textarea></div><button class="btn-primary" onclick="saveMemo()">저장</button><button class="btn-secondary" onclick="closeModal('memo-modal')">취소</button><button class="btn-danger" onclick="deleteHistory()">기록 삭제</button></div></div>
+<div class="modal-overlay" id="memo-modal"><div class="modal"><div class="modal-handle"></div><div class="modal-title" id="memo-modal-title">메모</div><div class="form-group"><label class="form-label">날짜 수정</label><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap"><input type="number" class="form-input" id="memo-date-y" style="width:66px;text-align:center;padding:8px 4px"><span style="color:var(--text2);font-size:13px">년</span><input type="number" class="form-input" id="memo-date-m" min="1" max="12" style="width:48px;text-align:center;padding:8px 4px"><span style="color:var(--text2);font-size:13px">월</span><input type="number" class="form-input" id="memo-date-d" min="1" max="31" style="width:48px;text-align:center;padding:8px 4px"><span style="color:var(--text2);font-size:13px">일</span><input type="number" class="form-input" id="memo-date-h" min="0" max="23" style="width:48px;text-align:center;padding:8px 4px"><span style="color:var(--text2);font-size:13px">시</span><input type="number" class="form-input" id="memo-date-min" min="0" max="59" style="width:48px;text-align:center;padding:8px 4px"><span style="color:var(--text2);font-size:13px">분</span></div></div><div class="form-group"><label class="form-label">메모 내용</label><textarea class="form-input" id="memo-input" rows="3" placeholder="예: 오전 이유식에 사용..."></textarea></div><button class="btn-primary" onclick="saveMemo()">저장</button><button class="btn-secondary" onclick="closeModal('memo-modal')">취소</button><button class="btn-danger" onclick="deleteHistory()">기록 삭제</button></div></div>
 
 <div class="modal-overlay" id="use-modal">
   <div class="modal">
@@ -880,9 +880,39 @@ function renderHistory(){
   });
   document.getElementById('history-list').innerHTML=html;
 }
-function openMemoModal(hid){editingMemoId=hid;const h=cache.history.find(x=>x.id===hid);if(!h)return;document.getElementById('memo-modal-title').textContent=`${h.emoji||'🍱'} ${h.cube_name||h.name||''} — 메모`;document.getElementById('memo-input').value=h.memo||'';document.getElementById('memo-modal').classList.add('open');}
-async function saveMemo(){const h=cache.history.find(x=>x.id===editingMemoId);if(h){h.memo=document.getElementById('memo-input').value.trim();await api('PATCH',`/api/history/${h.id}`,{memo:h.memo});}closeModal('memo-modal');renderHistory();}
-async function deleteHistory(){
+function openMemoModal(hid){
+  editingMemoId=hid;
+  const h=cache.history.find(x=>x.id===hid);if(!h)return;
+  document.getElementById('memo-modal-title').textContent=`${h.emoji||'🍱'} ${h.cube_name||h.name||''} — 메모`;
+  document.getElementById('memo-input').value=h.memo||'';
+  const dt=tsToDate(h.created_at);
+  document.getElementById('memo-date-y').value=dt.getFullYear();
+  document.getElementById('memo-date-m').value=dt.getMonth()+1;
+  document.getElementById('memo-date-d').value=dt.getDate();
+  document.getElementById('memo-date-h').value=dt.getHours();
+  document.getElementById('memo-date-min').value=dt.getMinutes();
+  document.getElementById('memo-modal').classList.add('open');
+}
+  
+  async function saveMemo(){
+  const h=cache.history.find(x=>x.id===editingMemoId);if(!h)return;
+  h.memo=document.getElementById('memo-input').value.trim();
+  const y=document.getElementById('memo-date-y')?.value;
+  const m=document.getElementById('memo-date-m')?.value;
+  const d=document.getElementById('memo-date-d')?.value;
+  const hr=document.getElementById('memo-date-h')?.value||'0';
+  const mn=document.getElementById('memo-date-min')?.value||'0';
+  let newTs=h.created_at;
+  if(y&&m&&d){
+    const dt=new Date(parseInt(y),parseInt(m)-1,parseInt(d),parseInt(hr),parseInt(mn),0);
+    newTs=Math.floor(dt.getTime()/1000);
+    h.created_at=newTs;
+  }
+  await api('PATCH',`/api/history/${h.id}`,{memo:h.memo,created_at:newTs});
+  closeModal('memo-modal');renderHistory();
+}
+  
+  async function deleteHistory(){
   if(!confirm('이 기록을 삭제할까요?'))return;
   await api('DELETE',`/api/history/${editingMemoId}`);
   cache.history=cache.history.filter(h=>h.id!==editingMemoId);
