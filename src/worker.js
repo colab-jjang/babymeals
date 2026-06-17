@@ -16,7 +16,6 @@ function json(data, status = 200) {
 }
 function err(msg, status = 400) { return json({ error: msg }, status); }
 
-// ── JWT (간단한 HMAC-SHA256 구현) ──
 async function hmacSign(secret, data) {
   const key = await crypto.subtle.importKey(
     'raw', new TextEncoder().encode(secret),
@@ -51,7 +50,6 @@ async function verifyJWT(token, secret) {
   } catch { return null; }
 }
 
-// ── 비밀번호 해싱 (SHA-256 기반) ──
 async function hashPassword(password, salt) {
   const data = new TextEncoder().encode(password + salt);
   const hash = await crypto.subtle.digest('SHA-256', data);
@@ -63,68 +61,15 @@ function randomSalt() {
     .map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
-// ── DB 초기화 ──
 let dbInitialized = false;
 async function initDB(db) {
   await db.batch([
-    db.prepare(`CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      email TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      salt TEXT NOT NULL,
-      created_at INTEGER DEFAULT (unixepoch())
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS babies (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      name TEXT NOT NULL,
-      bday TEXT,
-      avatar TEXT DEFAULT '👶',
-      created_at INTEGER DEFAULT (unixepoch())
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS cubes (
-      id TEXT PRIMARY KEY,
-      baby_id TEXT,
-      user_id TEXT,
-      name TEXT NOT NULL,
-      emoji TEXT DEFAULT '🍱',
-      cat_id TEXT NOT NULL,
-      qty REAL DEFAULT 0,
-      weight TEXT DEFAULT '',
-      unit TEXT DEFAULT 'g',
-      made_date TEXT,
-      expire_date TEXT,
-      allergy TEXT DEFAULT 'unknown',
-      particle INTEGER DEFAULT 0,
-      note TEXT DEFAULT '',
-      created_at INTEGER DEFAULT (unixepoch())
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS categories (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      name TEXT NOT NULL,
-      emoji TEXT DEFAULT '📦',
-      color TEXT DEFAULT '#D4537E',
-      is_default INTEGER DEFAULT 0,
-      created_at INTEGER DEFAULT (unixepoch())
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS history (
-      id TEXT PRIMARY KEY,
-      baby_id TEXT,
-      user_id TEXT,
-      cube_name TEXT NOT NULL,
-      emoji TEXT DEFAULT '🍱',
-      type TEXT NOT NULL,
-      amount REAL NOT NULL,
-      memo TEXT DEFAULT '',
-      created_at INTEGER DEFAULT (unixepoch())
-    )`),
-    db.prepare(`CREATE TABLE IF NOT EXISTS settings (
-      user_id TEXT PRIMARY KEY,
-      active_baby_id TEXT,
-      theme_idx INTEGER DEFAULT 0,
-      updated_at INTEGER DEFAULT (unixepoch())
-    )`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, salt TEXT NOT NULL, created_at INTEGER DEFAULT (unixepoch()))`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS babies (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, bday TEXT, avatar TEXT DEFAULT '👶', created_at INTEGER DEFAULT (unixepoch()))`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS cubes (id TEXT PRIMARY KEY, baby_id TEXT, user_id TEXT, name TEXT NOT NULL, emoji TEXT DEFAULT '🍱', cat_id TEXT NOT NULL, qty REAL DEFAULT 0, weight TEXT DEFAULT '', unit TEXT DEFAULT 'g', made_date TEXT, expire_date TEXT, allergy TEXT DEFAULT 'unknown', particle INTEGER DEFAULT 0, note TEXT DEFAULT '', created_at INTEGER DEFAULT (unixepoch()))`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS categories (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, emoji TEXT DEFAULT '📦', color TEXT DEFAULT '#D4537E', is_default INTEGER DEFAULT 0, created_at INTEGER DEFAULT (unixepoch()))`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, baby_id TEXT, user_id TEXT, cube_name TEXT NOT NULL, emoji TEXT DEFAULT '🍱', type TEXT NOT NULL, amount REAL NOT NULL, memo TEXT DEFAULT '', created_at INTEGER DEFAULT (unixepoch()))`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS settings (user_id TEXT PRIMARY KEY, active_baby_id TEXT, theme_idx INTEGER DEFAULT 0, updated_at INTEGER DEFAULT (unixepoch()))`),
   ]);
 }
 
@@ -155,7 +100,6 @@ export default {
     const method = request.method;
 
     if (method === 'OPTIONS') return new Response(null, { headers: CORS });
-
     if (!dbInitialized) { await initDB(env.DB); dbInitialized = true; }
 
     const JWT_SECRET = env.JWT_SECRET || 'baby-cube-secret-2024';
@@ -163,7 +107,6 @@ export default {
     try {
       if (path === '/api/ping') return json({ ok: true });
 
-      // ── 회원가입 ──
       if (path === '/api/auth/register' && method === 'POST') {
         const { email, password } = await request.json();
         if (!email || !password) return err('이메일과 비밀번호를 입력해주세요');
@@ -173,41 +116,29 @@ export default {
         const salt = randomSalt();
         const hash = await hashPassword(password, salt);
         const userId = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-        await env.DB.prepare('INSERT INTO users (id, email, password_hash, salt) VALUES (?,?,?,?)')
-          .bind(userId, email.toLowerCase(), hash, salt).run();
+        await env.DB.prepare('INSERT INTO users (id, email, password_hash, salt) VALUES (?,?,?,?)').bind(userId, email.toLowerCase(), hash, salt).run();
         const token = await makeJWT({ sub: userId, email: email.toLowerCase(), exp: Math.floor(Date.now()/1000) + 86400*365 }, JWT_SECRET);
         return json({ ok: true, token, userId });
       }
 
-      // ── 비밀번호 찾기 (재설정 링크 발송) ──
       if (path === '/api/auth/forgot-password' && method === 'POST') {
         const { email } = await request.json();
         if (!email) return err('이메일을 입력해주세요');
         const user = await env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email.toLowerCase()).first();
-        // 보안상 사용자 존재 여부 노출 안 함
         if (!user) return json({ ok: true });
-        // 재설정 토큰 생성 (1시간 유효)
         const resetToken = Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b=>b.toString(16).padStart(2,'0')).join('');
         const expiresAt = Math.floor(Date.now()/1000) + 3600;
-        await env.DB.prepare('INSERT OR REPLACE INTO password_resets (token, user_id, expires_at, used) VALUES (?,?,?,0)')
-          .bind(resetToken, user.id, expiresAt).run();
+        await env.DB.prepare('INSERT OR REPLACE INTO password_resets (token, user_id, expires_at, used) VALUES (?,?,?,0)').bind(resetToken, user.id, expiresAt).run();
         const resetUrl = `https://babymeals.pages.dev?reset=${resetToken}`;
-        // Resend로 이메일 발송
         const RESEND_KEY = env.RESEND_API_KEY;
         await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_KEY}` },
-          body: JSON.stringify({
-            from: 'onboarding@resend.dev',
-            to: ['iyhee8@gmail.com'],
-            subject: '🍼 이유식 큐브 현황 — 비밀번호 재설정',
-            html: `<p>비밀번호 재설정을 요청하셨어요.</p><p><a href="${resetUrl}">여기를 클릭해서 새 비밀번호를 설정하세요</a></p><p>링크는 1시간 후 만료돼요.</p><p>요청하지 않으셨다면 무시해주세요.</p>`,
-          }),
+          body: JSON.stringify({ from: 'onboarding@resend.dev', to: ['iyhee8@gmail.com'], subject: '🍼 이유식 큐브 현황 — 비밀번호 재설정', html: `<p><a href="${resetUrl}">비밀번호 재설정 링크</a></p>` }),
         });
         return json({ ok: true });
       }
 
-      // ── 비밀번호 재설정 (토큰으로) ──
       if (path === '/api/auth/reset-password' && method === 'POST') {
         const { token: resetToken, newPassword } = await request.json();
         if (!resetToken || !newPassword) return err('올바르지 않은 요청이에요');
@@ -222,7 +153,6 @@ export default {
         return json({ ok: true });
       }
 
-      // ── 로그인 ──
       if (path === '/api/auth/login' && method === 'POST') {
         const { email, password } = await request.json();
         if (!email || !password) return err('이메일과 비밀번호를 입력해주세요');
@@ -234,7 +164,6 @@ export default {
         return json({ ok: true, token, userId: user.id });
       }
 
-      // ── 이후 모든 API는 JWT 인증 필요 ──
       const authHeader = request.headers.get('Authorization');
       const token = authHeader?.replace('Bearer ', '');
       if (!token) return err('로그인이 필요해요', 401);
@@ -242,7 +171,6 @@ export default {
       if (!payload) return err('인증이 만료됐어요. 다시 로그인해주세요', 401);
       const userId = payload.sub;
 
-      // ── 비밀번호 변경 ──
       if (path === '/api/auth/change-password' && method === 'POST') {
         const { currentPassword, newPassword } = await request.json();
         if (!currentPassword || !newPassword) return err('비밀번호를 입력해주세요');
@@ -257,7 +185,6 @@ export default {
         return json({ ok: true });
       }
 
-      // ── favorites ──
       if (path === '/api/favorites') {
         if (method === 'GET') {
           const rows = await env.DB.prepare('SELECT food_name, reaction FROM favorites WHERE user_id = ?').bind(userId).all();
@@ -268,11 +195,9 @@ export default {
           const existing = await env.DB.prepare('SELECT id, reaction FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).first();
           if (existing) {
             if (existing.reaction === reaction) {
-              // 같은 반응 누르면 삭제
               await env.DB.prepare('DELETE FROM favorites WHERE user_id = ? AND food_name = ?').bind(userId, food_name).run();
               return json({ ok: true, reaction: null });
             } else {
-              // 다른 반응으로 변경
               await env.DB.prepare('UPDATE favorites SET reaction = ? WHERE user_id = ? AND food_name = ?').bind(reaction, userId, food_name).run();
               return json({ ok: true, reaction });
             }
@@ -282,6 +207,7 @@ export default {
           }
         }
       }
+
       if (path === '/api/init' && method === 'GET') {
         await ensureDefaultCategories(env.DB, userId);
         const [babiesR, catsR, settingsR] = await Promise.all([
@@ -305,7 +231,6 @@ export default {
         return json({ babies, categories: cats, settings, cubes: cubesR.results, history: histR.results, favorites: favsR.results.map(r=>({food_name:r.food_name,reaction:r.reaction||'like'})) });
       }
 
-      // ── settings ──
       if (path === '/api/settings') {
         if (method === 'GET') {
           const row = await env.DB.prepare('SELECT * FROM settings WHERE user_id = ?').bind(userId).first();
@@ -313,14 +238,12 @@ export default {
         }
         if (method === 'POST') {
           const body = await request.json();
-          await env.DB.prepare(`INSERT INTO settings (user_id, active_baby_id, theme_idx, updated_at) VALUES (?,?,?,unixepoch())
-            ON CONFLICT(user_id) DO UPDATE SET active_baby_id=excluded.active_baby_id, theme_idx=excluded.theme_idx, updated_at=unixepoch()`)
+          await env.DB.prepare(`INSERT INTO settings (user_id, active_baby_id, theme_idx, updated_at) VALUES (?,?,?,unixepoch()) ON CONFLICT(user_id) DO UPDATE SET active_baby_id=excluded.active_baby_id, theme_idx=excluded.theme_idx, updated_at=unixepoch()`)
             .bind(userId, body.active_baby_id ?? null, body.theme_idx ?? 0).run();
           return json({ ok: true });
         }
       }
 
-      // ── babies ──
       if (path === '/api/babies') {
         if (method === 'GET') {
           const rows = await env.DB.prepare('SELECT * FROM babies WHERE user_id = ? ORDER BY created_at').bind(userId).all();
@@ -328,49 +251,40 @@ export default {
         }
         if (method === 'POST') {
           const body = await request.json();
-          await env.DB.prepare('INSERT OR REPLACE INTO babies (id, user_id, name, bday, avatar) VALUES (?,?,?,?,?)')
-            .bind(body.id, userId, body.name, body.bday || null, body.avatar || '👶').run();
-          await env.DB.prepare(`INSERT INTO settings (user_id, active_baby_id, theme_idx) VALUES (?,?,0)
-            ON CONFLICT(user_id) DO UPDATE SET active_baby_id=COALESCE(active_baby_id, excluded.active_baby_id)`)
-            .bind(userId, body.id).run();
+          await env.DB.prepare('INSERT OR REPLACE INTO babies (id, user_id, name, bday, avatar) VALUES (?,?,?,?,?)').bind(body.id, userId, body.name, body.bday || null, body.avatar || '👶').run();
+          await env.DB.prepare(`INSERT INTO settings (user_id, active_baby_id, theme_idx) VALUES (?,?,0) ON CONFLICT(user_id) DO UPDATE SET active_baby_id=COALESCE(active_baby_id, excluded.active_baby_id)`).bind(userId, body.id).run();
           return json({ ok: true });
         }
       }
       const babyMatch = path.match(/^\/api\/babies\/([^/]+)$/);
       if (babyMatch) {
-        const bid = babyMatch[1];
         if (method === 'DELETE') {
-          await env.DB.prepare('DELETE FROM babies WHERE id = ? AND user_id = ?').bind(bid, userId).run();
+          await env.DB.prepare('DELETE FROM babies WHERE id = ? AND user_id = ?').bind(babyMatch[1], userId).run();
           return json({ ok: true });
         }
       }
 
-      // ── categories ──
       if (path === '/api/categories') {
         await ensureDefaultCategories(env.DB, userId);
         if (method === 'GET') {
           const rows = await env.DB.prepare('SELECT * FROM categories WHERE user_id = ? ORDER BY is_default DESC, created_at').bind(userId).all();
-          const clean = rows.results.map(r => ({ ...r, id: r.id.replace(`${userId}_`, '') }));
-          return json(clean);
+          return json(rows.results.map(r => ({ ...r, id: r.id.replace(`${userId}_`, '') })));
         }
         if (method === 'POST') {
           const body = await request.json();
-          const realId = `${userId}_${body.id}`;
           await env.DB.prepare('INSERT OR REPLACE INTO categories (id, user_id, name, emoji, color, is_default) VALUES (?,?,?,?,?,?)')
-            .bind(realId, userId, body.name, body.emoji, body.color, body.is_default ? 1 : 0).run();
+            .bind(`${userId}_${body.id}`, userId, body.name, body.emoji, body.color, body.is_default ? 1 : 0).run();
           return json({ ok: true });
         }
       }
       const catMatch = path.match(/^\/api\/categories\/([^/]+)$/);
       if (catMatch) {
-        const cid = `${userId}_${catMatch[1]}`;
         if (method === 'DELETE') {
-          await env.DB.prepare('DELETE FROM categories WHERE id = ? AND user_id = ?').bind(cid, userId).run();
+          await env.DB.prepare('DELETE FROM categories WHERE id = ? AND user_id = ?').bind(`${userId}_${catMatch[1]}`, userId).run();
           return json({ ok: true });
         }
       }
 
-      // ── cubes ──
       if (path === '/api/cubes') {
         if (method === 'GET') {
           const babyId = url.searchParams.get('baby_id');
@@ -406,7 +320,6 @@ export default {
         }
       }
 
-      // ── history ──
       if (path === '/api/history') {
         if (method === 'GET') {
           const babyId = url.searchParams.get('baby_id');
@@ -427,7 +340,14 @@ export default {
       if (histMatch) {
         if (method === 'PATCH') {
           const body = await request.json();
-          await env.DB.prepare('UPDATE history SET memo=? WHERE id=? AND user_id=?').bind(body.memo, histMatch[1], userId).run();
+          // memo와 created_at 모두 업데이트 가능
+          if (body.created_at !== undefined) {
+            await env.DB.prepare('UPDATE history SET memo=?, created_at=? WHERE id=? AND user_id=?')
+              .bind(body.memo ?? '', body.created_at, histMatch[1], userId).run();
+          } else {
+            await env.DB.prepare('UPDATE history SET memo=? WHERE id=? AND user_id=?')
+              .bind(body.memo, histMatch[1], userId).run();
+          }
           return json({ ok: true });
         }
         if (method === 'DELETE') {
