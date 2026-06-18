@@ -242,7 +242,7 @@ export default {
           activeBabyId
             ? env.DB.prepare('SELECT * FROM history WHERE baby_id = ? ORDER BY created_at DESC LIMIT 100').bind(activeBabyId).all()
             : env.DB.prepare('SELECT * FROM history WHERE user_id = ? ORDER BY created_at DESC LIMIT 100').bind(userId).all(),
-          env.DB.prepare('SELECT food_name FROM favorites WHERE user_id = ?').bind(userId).all(),
+          env.DB.prepare('SELECT food_name, reaction FROM favorites WHERE user_id = ?').bind(userId).all(),
         ]);
         return json({ babies, categories: cats, settings, cubes: cubesR.results, history: histR.results, favorites: favsR.results.map(r=>({food_name:r.food_name,reaction:r.reaction})) });
       }
