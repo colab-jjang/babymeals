@@ -889,8 +889,6 @@ function openMemoModal(hid){
   document.getElementById('memo-date-y').value=dt.getFullYear();
   document.getElementById('memo-date-m').value=dt.getMonth()+1;
   document.getElementById('memo-date-d').value=dt.getDate();
-  document.getElementById('memo-date-h').value=dt.getHours();
-  document.getElementById('memo-date-min').value=dt.getMinutes();
   document.getElementById('memo-modal').classList.add('open');
 }
   
@@ -900,11 +898,9 @@ function openMemoModal(hid){
   const y=document.getElementById('memo-date-y')?.value;
   const m=document.getElementById('memo-date-m')?.value;
   const d=document.getElementById('memo-date-d')?.value;
-  const hr=document.getElementById('memo-date-h')?.value||'0';
-  const mn=document.getElementById('memo-date-min')?.value||'0';
   let newTs=h.created_at;
   if(y&&m&&d){
-    const dt=new Date(parseInt(y),parseInt(m)-1,parseInt(d),parseInt(hr),parseInt(mn),0);
+  const dt=new Date(parseInt(y),parseInt(m)-1,parseInt(d),12,0,0);
     newTs=Math.floor(dt.getTime()/1000);
     h.created_at=newTs;
   }
@@ -1015,11 +1011,11 @@ async function saveCube(editId){
   const curReaction=getFavReaction(foodKey);
   if(reaction==='none'&&curReaction){
     // 미설정으로 변경 — 삭제
-    api('POST','/api/favorites',{food_name:foodKey,reaction:curReaction}).then(()=>{
+    api('PUT','/api/favorites',{food_name:foodKey,reaction:'none'}).then(()=>{
       cache.favorites=cache.favorites.filter(f=>f.food_name!==foodKey);
     });
   } else if(reaction!=='none'){
-    api('POST','/api/favorites',{food_name:foodKey,reaction}).then(d=>{
+    api('PUT','/api/favorites',{food_name:foodKey,reaction}).then(d=>{
       if(d.reaction){const ex=cache.favorites.find(f=>f.food_name===foodKey);if(ex)ex.reaction=d.reaction;else cache.favorites.push({food_name:foodKey,reaction:d.reaction});}
       else{cache.favorites=cache.favorites.filter(f=>f.food_name!==foodKey);}
       renderCubes();
